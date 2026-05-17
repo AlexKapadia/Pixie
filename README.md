@@ -78,21 +78,9 @@ Full walkthrough: [start/first-tool](https://alexkapadia.github.io/Pixie/start/f
 
 ## What ships in the box
 
-Thirty-one tools, all validated, all reproducible:
+The runtime, the validator, the schema-driven UI, and the full Claude Code skill library — nothing else. `tools/` is empty on a fresh clone. You bring your own scripts, notebooks, repos, papers, or Excel models and Claude wires them in.
 
-| Domain | Tools |
-| --- | --- |
-| Quant & finance | black-scholes-greeks, markowitz-portfolio, stock-monte-carlo, backtest-engine |
-| Time series | time-series-forecast, sentiment-over-time, anomaly-detection-isolation-forest |
-| ML training | live-mlp-training, vit-classifier-gradcam, yolo-object-detection, image-segmentation, style-transfer |
-| NLP & audio | bertopic-modelling, whisper-transcription, coqui-tts, demucs-separation, rag-with-citations, llm-tool-use-agent |
-| Causal & stats | dowhy-causal-ate, pymc-bayesian-ab, kaplan-meier-cox |
-| Simulation | lorenz-ode-solver, n-body-simulator, lotka-volterra-simulator, cellular-automata |
-| Geospatial & graph | geospatial-kde-heatmap, open-meteo-forecast, graph-algorithms-playground, tsp-route-optimizer |
-| Physics | qiskit-quantum-simulator |
-| Examples | example-compound-interest |
-
-Each is a folder under `tools/`. Each has a `tool.json`, a `pyproject.toml`, a `main.py`, sample fixtures, and reference outputs the validator diffs against on every change.
+Every tool lives in its own folder under `tools/` with a `tool.json`, a `pyproject.toml`, a `main.py`, sample fixtures, and reference outputs the validator diffs against on every change. Local `.venv`, `data/`, `models/`, `outputs/`, and `.env` stay on your machine and never get committed.
 
 ## How a tool is shaped
 
