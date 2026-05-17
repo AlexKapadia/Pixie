@@ -74,26 +74,55 @@ confirms the contract is honoured.
   </Card>
 </CardGrid>
 
-## Add a tool in one sentence
+## Add a tool from whatever you've got
 
-```text title="In Claude Code"
+Pixie doesn't care where a tool comes from. The skills cover every common
+starting point:
+
+```text title="From a plain-English description"
 Add a Pixie tool that converts currencies using the Frankfurter API
 ```
+```text title="From an existing GitHub repo"
+Add a Pixie tool from https://github.com/some-org/cool-model
+```
+```text title="From an Excel .xlsx model (formulas and all)"
+Wrap my Excel model at ./quant/black_litterman.xlsx as a Pixie tool.
+```
+```text title="From an academic paper PDF or arXiv link"
+Implement this paper as a Pixie tool: https://arxiv.org/abs/2310.06770
+```
+```text title="From a Jupyter notebook"
+Add a Pixie tool from this notebook: ./experiments/forecasting.ipynb
+```
+```text title="From a CLI binary (ffmpeg, pandoc, yt-dlp, ...)"
+Wrap ffmpeg as a Pixie tool that re-encodes video.
+```
+```text title="From a Streamlit or Gradio app"
+Convert ./apps/dashboard.py (Streamlit) into a Pixie tool.
+```
+```text title="From an OpenAPI spec"
+Add a Pixie tool from this OpenAPI spec: ./vendor/payments.yaml
+```
 
-That sentence triggers the `add-tool-from-description` skill, which:
+Each sentence triggers a focused skill (`add-tool-from-description`,
+`add-tool-from-repo`, `add-tool-from-excel-model`, `add-tool-from-paper`,
+`add-tool-from-notebook`, `add-tool-from-cli-command`,
+`convert-streamlit-app`, `convert-gradio-app`, `add-tool-from-openapi-spec`)
+that:
 
 1. Picks a kebab-case `id` and a human-readable name.
-2. Writes `tool.json` with a `select` for the source currency, another for the
-   target, a `number` for the amount, and an output `number` formatted as
-   currency.
+2. Writes `tool.json` with the right inputs and outputs (and, for the paper
+   path, reference fixtures from the paper's own reported numbers).
 3. Writes `pyproject.toml` and `main.py` (a FastAPI app honouring the
    `/schema` + `/healthz` + `/run` contract).
 4. Runs `uv sync` to build the `.venv`.
-5. Runs `uv run pixie validate currency-converter` — 11 checks, including
-   spawning the tool and POSTing sample input.
+5. Runs `uv run pixie validate <id>` end-to-end, including spawning the tool
+   and POSTing sample input.
 6. Surfaces the full report. Only if `overall: pass` does it claim success.
 
 Refresh the dashboard and the tool appears in the sidebar with a green dot.
+
+Full reference: [Add tools](/Pixie/skills/add-tools/).
 
 ## What tools can do
 
