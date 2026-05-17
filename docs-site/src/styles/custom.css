@@ -108,26 +108,29 @@ kbd {
    --------------------------------------------------------------------------- */
 
 /* Logo: invert to white in dark mode so it pops on the dark background.
-   Starlight renders the header logo as <img> inside .site-title. */
+   Covers both the header logo (.site-title img) and the splash-template
+   hero image (.hero img), which both point at pixie-logo.png. */
 :root[data-theme="dark"] .site-title img,
 :root[data-theme="dark"] header .site-title img,
 :root[data-theme="dark"] a.site-title img,
-:root[data-theme="dark"] .site-title svg {
+:root[data-theme="dark"] .site-title svg,
+:root[data-theme="dark"] .hero img,
+:root[data-theme="dark"] .hero > img,
+:root[data-theme="dark"] .hero picture img {
   filter: brightness(0) invert(1);
 }
 
-/* Prettier <select> dropdowns in the header (theme select, language select).
-   Starlight uses native <select> wrapped in .sl-select; we restyle both. */
-.sl-select,
-starlight-theme-select select,
-header select {
-  background-color: var(--sl-color-bg-nav);
+/* Prettier theme-select dropdown in the header. Scoped tightly to
+   starlight-theme-select so we don't restyle every <select> on the page
+   (which previously pushed the dropdown into the logo area). */
+starlight-theme-select > label > select {
+  background-color: transparent;
   color: var(--sl-color-text);
   border: 1px solid var(--sl-color-hairline);
-  border-radius: 10px;
-  padding: 0.35rem 2rem 0.35rem 0.75rem;
+  border-radius: 8px;
+  padding: 0.2rem 1.4rem 0.2rem 0.5rem;
   font-family: var(--sl-font);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   appearance: none;
@@ -139,46 +142,30 @@ header select {
     ),
     linear-gradient(135deg, var(--sl-color-text-accent) 50%, transparent 50%);
   background-position:
-    calc(100% - 14px) 50%,
-    calc(100% - 9px) 50%;
-  background-size: 5px 5px, 5px 5px;
+    calc(100% - 9px) 50%,
+    calc(100% - 5px) 50%;
+  background-size: 4px 4px, 4px 4px;
   background-repeat: no-repeat;
   transition:
     border-color 140ms ease,
     box-shadow 140ms ease,
-    background-color 140ms ease,
-    transform 80ms ease;
+    background-color 140ms ease;
 }
 
-.sl-select:hover,
-starlight-theme-select select:hover,
-header select:hover {
+starlight-theme-select > label > select:hover {
   border-color: var(--sl-color-accent);
   background-color: var(--sl-color-accent-low);
 }
 
-.sl-select:focus,
-.sl-select:focus-visible,
-starlight-theme-select select:focus,
-starlight-theme-select select:focus-visible,
-header select:focus,
-header select:focus-visible {
+starlight-theme-select > label > select:focus,
+starlight-theme-select > label > select:focus-visible {
   outline: none;
   border-color: var(--sl-color-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
 }
 
-.sl-select:active,
-starlight-theme-select select:active,
-header select:active {
-  transform: translateY(1px);
-}
-
-/* The <option> popup is OS-rendered; we can only hint colours.
-   This keeps the dropdown panel readable on dark mode in Chromium. */
-:root[data-theme="dark"] .sl-select option,
-:root[data-theme="dark"] starlight-theme-select select option,
-:root[data-theme="dark"] header select option {
+/* The <option> popup is OS-rendered; we can only hint colours. */
+:root[data-theme="dark"] starlight-theme-select > label > select option {
   background-color: #1e1b2e;
   color: var(--sl-color-text);
 }
