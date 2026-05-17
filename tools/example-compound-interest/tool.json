@@ -1,0 +1,116 @@
+{
+  "id": "compound-interest",
+  "name": "Compound Interest",
+  "description": "Calculate compound interest with regular contributions, optionally adjusted for inflation.",
+  "version": "0.1.0",
+  "category": "finance",
+  "icon": "calculator",
+  "layout": "form",
+  "warm_keep_seconds": 300,
+  "max_memory_mb": 512,
+  "max_runtime_seconds": 30,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "principal",
+      "type": "number",
+      "label": "Principal",
+      "description": "Starting balance.",
+      "default": 10000,
+      "min": 0,
+      "max": 10000000,
+      "step": 100,
+      "unit": "£"
+    },
+    {
+      "key": "annual_rate",
+      "type": "slider",
+      "label": "Annual interest rate (%)",
+      "description": "Nominal annual rate.",
+      "default": 5,
+      "min": 0,
+      "max": 20,
+      "step": 0.1
+    },
+    {
+      "key": "years",
+      "type": "number",
+      "label": "Years",
+      "description": "Investment horizon.",
+      "default": 10,
+      "min": 1,
+      "max": 50,
+      "step": 1
+    },
+    {
+      "key": "compounding",
+      "type": "select",
+      "label": "Compounding",
+      "description": "How often interest compounds per year.",
+      "default": 12,
+      "options": [
+        {"value": 1, "label": "Annual"},
+        {"value": 4, "label": "Quarterly"},
+        {"value": 12, "label": "Monthly"},
+        {"value": 365, "label": "Daily"}
+      ]
+    },
+    {
+      "key": "monthly_contribution",
+      "type": "number",
+      "label": "Monthly contribution",
+      "description": "Amount added every month.",
+      "default": 250,
+      "min": 0,
+      "step": 50,
+      "unit": "£"
+    },
+    {
+      "key": "inflation_adjusted",
+      "type": "toggle",
+      "label": "Show inflation-adjusted view",
+      "description": "Deflate balances at 2.5% per year.",
+      "default": false
+    }
+  ],
+  "outputs": [
+    {
+      "key": "final_value",
+      "type": "number",
+      "label": "Final balance",
+      "format": "currency",
+      "precision": 2
+    },
+    {
+      "key": "total_contributions",
+      "type": "number",
+      "label": "Total contributions",
+      "format": "currency",
+      "precision": 2
+    },
+    {
+      "key": "total_interest",
+      "type": "number",
+      "label": "Interest earned",
+      "format": "currency",
+      "precision": 2
+    },
+    {
+      "key": "growth_chart",
+      "type": "chart_line",
+      "label": "Balance over time"
+    },
+    {
+      "key": "yearly_breakdown",
+      "type": "table",
+      "label": "Year-by-year breakdown",
+      "columns": [
+        {"key": "year", "label": "Year", "type": "number"},
+        {"key": "start_balance", "label": "Start balance", "type": "number"},
+        {"key": "contributions", "label": "Contributions", "type": "number"},
+        {"key": "interest", "label": "Interest", "type": "number"},
+        {"key": "end_balance", "label": "End balance", "type": "number"}
+      ]
+    }
+  ]
+}

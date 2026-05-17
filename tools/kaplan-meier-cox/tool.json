@@ -1,0 +1,66 @@
+{
+  "id": "kaplan-meier-cox",
+  "name": "Kaplan-Meier + Cox",
+  "description": "Estimate Kaplan-Meier survival curves (optionally stratified) and Cox-proportional-hazards ratios for any covariates supplied.",
+  "version": "0.1.0",
+  "category": "stats/survival",
+  "icon": "trending-down",
+  "layout": "form",
+  "warm_keep_seconds": 300,
+  "max_memory_mb": 512,
+  "max_runtime_seconds": 60,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "csv_file",
+      "type": "file",
+      "label": "CSV dataset",
+      "description": "Must include time + event columns; optional strata and covariates.",
+      "accept": [".csv"]
+    },
+    {
+      "key": "time_column",
+      "type": "text",
+      "label": "Time column",
+      "default": "time"
+    },
+    {
+      "key": "event_column",
+      "type": "text",
+      "label": "Event column",
+      "description": "1 = event observed, 0 = censored.",
+      "default": "event"
+    },
+    {
+      "key": "strata_column",
+      "type": "text",
+      "label": "Strata column (optional)",
+      "default": ""
+    },
+    {
+      "key": "covariates",
+      "type": "tags",
+      "label": "Cox covariates (optional)",
+      "default": []
+    }
+  ],
+  "outputs": [
+    {
+      "key": "survival_curves",
+      "type": "chart_line",
+      "label": "Kaplan-Meier survival curves",
+      "y_label": "S(t)"
+    },
+    {
+      "key": "median_survival",
+      "type": "table",
+      "label": "Median survival per stratum",
+      "downloadable": true
+    },
+    {
+      "key": "hazard_ratios",
+      "type": "kv",
+      "label": "Cox hazard ratios"
+    }
+  ]
+}

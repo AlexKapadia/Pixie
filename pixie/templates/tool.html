@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{%- from 'partials/icons.html' import icon -%}
+{% block title %}{{ tool.schema.name }} — Pixie{% endblock %}
+
+{% block header %}
+  {% include "partials/header.html" %}
+{% endblock %}
+
+{% block body %}
+  {# Tool body: form / chat / split layout chosen via data-layout. #}
+  <div class="tool-body" data-layout="{{ tool.schema.layout }}">
+    {% if tool.schema.layout == 'form' or tool.schema.layout == 'split' %}
+      <section class="panel-col panel-col--inputs">
+        <div class="panel-col__header">
+          <span class="t-eyebrow">Inputs</span>
+          <button type="button"
+                  class="btn btn--ghost btn--sm"
+                  onclick="document.getElementById('run-form') && document.getElementById('run-form').reset()"
+                  title="Reset inputs">
+            {{ icon('refresh', 11) }} Reset
+          </button>
+        </div>
+        <form id="run-form"
+              class="panel-col__body"
+              data-pixie-tool="{{ tool.tool_id }}"
+              hx-post="/tool/{{ tool.tool_id }}/run"
+              hx-target="#output-panel"
+              hx-swap="innerHTML"
+              hx-indicator="#run-spinner">
+          {{ render_inputs(tool.schema.inputs, last_inputs or {}) | safe }}
+        </form>
+        <div class="panel-col__footer">
+          <span id="run-spinner" class="htmx-indicator t-meta">Running…</span>
+          <span style="flex:1"></span>
+          <button type="submit" form="run-form" class="btn btn--primary">
+            {{ icon('play', 12) }} Run
+          </button>
+        </div>
+      </section>
+
+      <section class="panel-col panel-col--outputs">
+        <div id="output-panel" class="panel-col__body">
+          {% if last_outputs %}
+            {{ render_outputs(tool.schema.outputs, last_outputs) | safe }}
+          {% else %}
+            <div class="output-empty">
+              Run the tool to see outputs here.
+            </div>
+          {% endif %}
+        </div>
+      </section>
+    {% elif tool.schema.layout == 'chat' %}
+      <div class="placeholder">chat layout — phase 4d</div>
+    {% endif %}
+  </div>
+{% endblock %}

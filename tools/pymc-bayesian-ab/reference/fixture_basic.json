@@ -1,0 +1,14 @@
+{
+  "name": "10% vs 13% conversion",
+  "source": "canonical A/B test example: 100/1000 control vs 130/1000 variant",
+  "inputs": {
+    "control_conversions": 100,
+    "control_total": 1000,
+    "variant_conversions": 130,
+    "variant_total": 1000,
+    "prior_strength": 2.0
+  },
+  "expected_outputs": {},
+  "tolerance": {},
+  "tags": ["bayesian", "experimentation"]
+}

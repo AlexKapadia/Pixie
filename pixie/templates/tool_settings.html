@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{%- from 'partials/icons.html' import icon -%}
+{% block title %}{{ tool.schema.name }} settings — Pixie{% endblock %}
+
+{% block header %}
+  <header class="header">
+    <div class="header__main">
+      <div class="header__title-row">
+        <span class="icon-slot">{{ icon(tool.schema.icon or 'settings', 14) }}</span>
+        <h1 class="t-h5">{{ tool.schema.name }} <span class="t-meta">· settings</span></h1>
+        {% if developer_mode %}
+          <span class="mono t-meta" style="margin-left: 4px;">{{ tool.tool_id }}</span>
+        {% endif %}
+      </div>
+      <div class="header__meta">
+        <span>{{ tool.schema.description or 'Per-tool configuration. Secrets are written to .env on disk.' }}</span>
+      </div>
+    </div>
+    <div class="header__actions">
+      <a class="btn btn--ghost btn--sm"
+         href="/tool/{{ tool.tool_id }}"
+         hx-get="/tool/{{ tool.tool_id }}"
+         hx-target="#pixie-main-content"
+         hx-push-url="true">
+        {{ icon('chevron-left', 12) }} Back to tool
+      </a>
+    </div>
+  </header>
+{% endblock %}
+
+{% block body %}
+  <div id="tool-settings-body" class="settings-shell">
+    {% include "partials/tool_settings_body.html" %}
+  </div>
+{% endblock %}

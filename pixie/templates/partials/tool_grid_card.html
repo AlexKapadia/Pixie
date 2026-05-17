@@ -1,0 +1,86 @@
+{%- from 'partials/icons.html' import icon -%}
+<article class="tools-grid-card"
+         data-tool-id="{{ card.tool_id }}">
+  <input type="checkbox"
+         class="tools-grid-card__check"
+         aria-label="Select {{ card.name }}"
+         :checked="selected.includes('{{ card.tool_id }}')"
+         @change="toggleSelect('{{ card.tool_id }}')" />
+  <header class="tools-grid-card__head">
+    <span class="tools-grid-card__icon">{{ icon(card.icon, 14) }}</span>
+    <a class="tools-grid-card__name"
+       href="/tool/{{ card.tool_id }}"
+       hx-get="/tool/{{ card.tool_id }}"
+       hx-target="#pixie-main-content"
+       hx-push-url="true"
+       title="{{ card.description }}">{{ card.name }}</a>
+    {% if card.status == 'running' %}
+      <span class="dot dot--running dot--pulse" aria-label="running"></span>
+    {% elif card.status == 'failed' %}
+      <span class="dot dot--error" aria-label="failed"></span>
+    {% else %}
+      <span class="dot dot--dormant" aria-label="dormant"></span>
+    {% endif %}
+  </header>
+  <div class="tools-grid-card__body">
+    <div class="tools-grid-card__category mono">{{ card.category }}</div>
+    {% if card.description %}
+      <p class="tools-grid-card__desc t-meta">{{ card.description[:120] }}{% if card.description|length > 120 %}…{% endif %}</p>
+    {% endif %}
+  </div>
+  <div class="tools-grid-card__meta">
+    {% if card.validation == 'pass' %}
+      <span class="badge badge--ok">pass</span>
+    {% elif card.validation == 'warn' %}
+      <span class="badge badge--warn">warn</span>
+    {% elif card.validation == 'fail' %}
+      <span class="badge badge--err">fail</span>
+    {% else %}
+      <span class="badge">unchecked</span>
+    {% endif %}
+    <span class="t-meta"><span class="num mono">{{ card.run_count_total }}</span> runs</span>
+    <span class="t-meta">{{ card.disk_label }}</span>
+    <span class="t-meta">{{ card.last_run_label }}</span>
+  </div>
+  {% if card.tags %}
+    <div class="tools-grid-card__tags">
+      {% for tag in card.tags[:5] %}
+        <span class="badge mono">{{ tag }}</span>
+      {% endfor %}
+    </div>
+  {% endif %}
+  <div class="tools-grid-card__actions">
+    {% if card.archived %}
+      <button type="button" class="btn btn--ghost btn--sm"
+              hx-post="/api/tools/{{ card.tool_id }}/unarchive"
+              hx-swap="none"
+              @click="setTimeout(() => htmx.trigger('.tools-grid__filters select', 'change'), 80)"
+              title="Unarchive">
+        {{ icon('refresh', 12) }} Unarchive
+      </button>
+    {% else %}
+      <button type="button" class="btn btn--ghost btn--sm"
+              hx-post="/api/tools/{{ card.tool_id }}/archive"
+              hx-swap="none"
+              @click="setTimeout(() => htmx.trigger('.tools-grid__filters select', 'change'), 80)"
+              title="Archive">
+        {{ icon('trash', 12) }} Archive
+      </button>
+    {% endif %}
+    {% if card.pinned_warm %}
+      <button type="button" class="btn btn--ghost btn--sm"
+              hx-post="/api/tools/{{ card.tool_id }}/unpin"
+              hx-swap="none"
+              title="Stop keeping warm">
+        {{ icon('check', 12) }} Pinned warm
+      </button>
+    {% else %}
+      <button type="button" class="btn btn--ghost btn--sm"
+              hx-post="/api/tools/{{ card.tool_id }}/pin"
+              hx-swap="none"
+              title="Keep warm always">
+        {{ icon('plug', 12) }} Keep warm
+      </button>
+    {% endif %}
+  </div>
+</article>

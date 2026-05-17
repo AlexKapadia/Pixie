@@ -1,0 +1,87 @@
+{
+  "id": "time-series-forecast",
+  "name": "Time Series Forecast",
+  "description": "ARIMA / SARIMA / exponential-smoothing forecast for a univariate series with backtested error metrics.",
+  "version": "0.1.0",
+  "category": "data/stats",
+  "icon": "line-chart",
+  "layout": "form",
+  "warm_keep_seconds": 600,
+  "max_memory_mb": 1024,
+  "max_runtime_seconds": 120,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "series_csv",
+      "type": "file",
+      "label": "Series CSV",
+      "description": "CSV with two columns: date (parseable) and value.",
+      "accept": ".csv"
+    },
+    {
+      "key": "horizon_days",
+      "type": "number",
+      "label": "Forecast horizon",
+      "default": 30,
+      "min": 1,
+      "max": 365,
+      "step": 1
+    },
+    {
+      "key": "model",
+      "type": "select",
+      "label": "Model",
+      "default": "auto_arima",
+      "options": [
+        {"value": "arima", "label": "ARIMA(1,1,1)"},
+        {"value": "sarima", "label": "SARIMA(1,1,1)(1,1,1,s)"},
+        {"value": "ets", "label": "Holt-Winters (ETS)"},
+        {"value": "auto_arima", "label": "Auto ARIMA (small grid)"}
+      ]
+    },
+    {
+      "key": "seasonality",
+      "type": "select",
+      "label": "Seasonality",
+      "default": "none",
+      "options": [
+        {"value": "none", "label": "None"},
+        {"value": "weekly", "label": "Weekly (7)"},
+        {"value": "monthly", "label": "Monthly (12)"},
+        {"value": "yearly", "label": "Yearly (12)"}
+      ]
+    },
+    {
+      "key": "confidence",
+      "type": "slider",
+      "label": "Confidence (%)",
+      "default": 95.0,
+      "min": 50.0,
+      "max": 99.0,
+      "step": 1.0
+    }
+  ],
+  "outputs": [
+    {
+      "key": "forecast_chart",
+      "type": "chart_line",
+      "label": "History, forecast and confidence band"
+    },
+    {
+      "key": "forecast_table",
+      "type": "table",
+      "label": "Forecast points",
+      "columns": [
+        {"key": "date", "label": "Date", "type": "string"},
+        {"key": "forecast", "label": "Forecast", "type": "number"},
+        {"key": "lower", "label": "Lower", "type": "number"},
+        {"key": "upper", "label": "Upper", "type": "number"}
+      ]
+    },
+    {
+      "key": "metrics",
+      "type": "kv",
+      "label": "Backtest metrics"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
+{% call output_card(spec, panel_id, 'audio') %}
+  <div class="output-card__body">
+    {% if has_value %}
+      {% set src = value.url if value is mapping and 'url' in value
+                   else value.data if value is mapping and 'data' in value
+                   else value %}
+      <audio class="output-audio" src="{{ src }}" controls preload="metadata"
+             aria-label="{{ spec.label }} audio"></audio>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

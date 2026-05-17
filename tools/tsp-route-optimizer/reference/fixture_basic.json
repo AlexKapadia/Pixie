@@ -1,0 +1,17 @@
+{
+  "name": "five UK cities",
+  "source": "London, Birmingham, Manchester, Leeds, Edinburgh — canonical small TSP",
+  "inputs": {
+    "cities": [
+      {"lat": 51.5074, "lng": -0.1278, "label": "London"},
+      {"lat": 52.4862, "lng": -1.8904, "label": "Birmingham"},
+      {"lat": 53.4808, "lng": -2.2426, "label": "Manchester"},
+      {"lat": 53.8008, "lng": -1.5491, "label": "Leeds"},
+      {"lat": 55.9533, "lng": -3.1883, "label": "Edinburgh"}
+    ],
+    "return_to_start": true
+  },
+  "expected_outputs": {},
+  "tolerance": {},
+  "tags": ["tsp", "geo"]
+}

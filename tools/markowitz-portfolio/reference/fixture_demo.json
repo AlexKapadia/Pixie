@@ -1,0 +1,19 @@
+{
+  "name": "Built-in demo dataset",
+  "source": "3-asset synthetic data; no file uploaded so the tool's fallback CSV is used.",
+  "inputs": {
+    "risk_free_rate": 4.0,
+    "periods_per_year": 252,
+    "target_return": 0.0
+  },
+  "expected_outputs": {
+    "summary": {
+      "assets": 3,
+      "observations": 20
+    }
+  },
+  "tolerance": {
+    "summary": {"allow_extra": true}
+  },
+  "tags": ["demo"]
+}

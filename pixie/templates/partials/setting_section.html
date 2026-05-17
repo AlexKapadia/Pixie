@@ -1,0 +1,28 @@
+{#-
+  Reusable section wrapper for the settings pages.
+
+  Usage:
+    {% call setting_section('Title', icon=icon('cog', 13),
+                            description='Short caption.') %}
+      ...body...
+    {% endcall %}
+
+  Optional flags:
+    danger=True — applies the amber-edged danger-zone treatment.
+-#}
+{% macro setting_section(title, icon='', description='', danger=False) -%}
+<section class="settings-section{% if danger %} settings-section--danger{% endif %}">
+  <header class="settings-section__head">
+    <div class="settings-section__head-inner">
+      {% if icon %}<span class="settings-section__icon">{{ icon }}</span>{% endif %}
+      <div class="settings-section__titles">
+        <h2 class="t-h5">{{ title }}</h2>
+        {% if description %}<p class="t-meta">{{ description }}</p>{% endif %}
+      </div>
+    </div>
+  </header>
+  <div class="settings-section__body">
+    {{ caller() }}
+  </div>
+</section>
+{%- endmacro %}

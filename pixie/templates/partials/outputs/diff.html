@@ -1,0 +1,13 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
+{% call output_card(spec, panel_id, 'diff') %}
+  <div class="output-card__body">
+    {% if has_value %}
+      <div class="output-diff">
+        <div class="output-diff__view"></div>
+        <script type="application/json">{{ value | tojson_safe | safe }}</script>
+      </div>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

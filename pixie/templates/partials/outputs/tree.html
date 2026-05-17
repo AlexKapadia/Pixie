@@ -1,0 +1,43 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
+{% macro render_node(node) -%}
+  {% set children = node.children or [] %}
+  {% set has_children = children | length > 0 %}
+  <li {% if has_children %}data-has-children="1"{% endif %}>
+    <div class="tree-row">
+      {% if has_children %}
+        <button type="button" class="tree-toggle" data-tree-toggle aria-label="Toggle"></button>
+      {% else %}
+        <span class="tree-toggle" aria-hidden="true" style="width:8px;"></span>
+      {% endif %}
+      <span class="tree-name">{{ node.name }}</span>
+      {% if node.meta %}<span class="tree-meta">{{ node.meta }}</span>{% endif %}
+    </div>
+    {% if has_children %}
+      <ul>
+        {% for c in children %}{{ render_node(c) }}{% endfor %}
+      </ul>
+    {% endif %}
+  </li>
+{%- endmacro %}
+{% call output_card(spec, panel_id, 'tree') %}
+  <div class="output-card__body">
+    {% if has_value %}
+      <div class="output-tree">
+        <div class="output-tree__bar">
+          <button type="button" class="btn btn--ghost btn--sm" data-tree-act="expand">Expand all</button>
+          <button type="button" class="btn btn--ghost btn--sm" data-tree-act="collapse">Collapse all</button>
+        </div>
+        <ul>
+          {% set root = value.root if value is mapping and 'root' in value else value %}
+          {% if root is mapping %}
+            {{ render_node(root) }}
+          {% elif root is iterable %}
+            {% for node in root %}{{ render_node(node) }}{% endfor %}
+          {% endif %}
+        </ul>
+      </div>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

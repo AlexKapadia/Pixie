@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{%- from 'partials/error.html' import error_block -%}
+{% block title %}Tool not found — Pixie{% endblock %}
+{% block body %}
+<div class="welcome">
+  <div class="welcome__inner" style="max-width: 640px; width: 100%;">
+    {{ error_block(
+         kind='validation',
+         severity='warn',
+         tool_id=unknown_tool_id,
+         tool_label=unknown_tool_id,
+         headline="No tool by that name.",
+         message=(
+           'Pixie did not find a folder under tools/ matching "' ~ unknown_tool_id ~ '". '
+           'Either the link is stale, or the tool has been removed.'
+         ),
+         primary_action={
+           'label': 'Back to dashboard',
+           'kind': 'link',
+           'icon': 'chevron-left',
+           'url': '/',
+         },
+         secondary_actions=[
+           {
+             'label': 'Add this tool in Claude Code',
+             'kind': 'copy-prompt',
+             'icon': 'wand',
+             'prompt': 'In Claude Code, run: add a Pixie tool named ' ~ unknown_tool_id ~ '.',
+           },
+         ],
+         hint='Tools appear in the sidebar automatically once they exist under tools/.'
+    ) }}
+  </div>
+</div>
+{% endblock %}

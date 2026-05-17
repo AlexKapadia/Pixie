@@ -1,0 +1,16 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
+{% call output_card(spec, panel_id, 'video') %}
+  <div class="output-card__body">
+    {% if has_value %}
+      {% set src = value.url if value is mapping and 'url' in value
+                   else value.data if value is mapping and 'data' in value
+                   else value %}
+      {% set poster = value.poster if value is mapping and 'poster' in value else '' %}
+      <video class="output-video" controls preload="metadata"
+             {% if poster %}poster="{{ poster }}"{% endif %}
+             src="{{ src }}" aria-label="{{ spec.label }} video"></video>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

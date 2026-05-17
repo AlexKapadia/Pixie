@@ -1,0 +1,88 @@
+{%- from 'partials/icons.html' import icon -%}
+{# Per-tool header. Expects `tool` (DiscoveredTool-like with .schema, .status). #}
+<header class="header" x-data="{ showHistory: false }">
+  <div class="header__main">
+    <div class="header__title-row">
+      <span class="icon-slot">{{ icon(tool.schema.icon or 'bolt', 14) }}</span>
+      <h1 class="t-h5">{{ tool.schema.name }}</h1>
+
+      {% if tool.status == 'running' %}
+        <span class="badge badge--running">{{ icon('bolt', 10) }} running</span>
+      {% elif tool.status == 'failed' %}
+        <span class="badge badge--error">{{ icon('alert-triangle', 10) }} failed</span>
+      {% elif tool.status == 'warm' %}
+        <span class="badge">warm</span>
+      {% else %}
+        <span class="badge">dormant</span>
+      {% endif %}
+
+      {% if tool.has_required_secrets_missing %}
+        <span class="badge badge--warn">{{ icon('alert-triangle', 10) }} key required</span>
+      {% endif %}
+
+      {% if developer_mode and tool.port %}
+        <span class="mono t-meta" style="margin-left: 4px;">
+          :{{ tool.port }} · pid {{ tool.pid or '—' }}
+        </span>
+      {% endif %}
+    </div>
+    {% if tool.schema.description %}
+      <div class="header__meta">
+        <span>{{ tool.schema.description }}</span>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="header__actions">
+    <button type="button"
+            class="btn btn--ghost btn--icon"
+            title="Run history"
+            @click="showHistory = !showHistory">
+      {{ icon('history') }}
+    </button>
+    <div x-show="showHistory" x-cloak class="popover" @click.outside="showHistory = false">
+      {% if recent_runs %}
+        {% for run in recent_runs %}
+          <button type="button"
+                  class="popover__item"
+                  hx-get="/tool/{{ tool.tool_id }}/runs/{{ run.id }}"
+                  hx-target="#output-panel"
+                  hx-swap="innerHTML">
+            {% if run.status == 'ok' %}
+              <span class="dot dot--running" aria-hidden="true"></span>
+            {% elif run.status == 'error' %}
+              <span class="dot dot--error" aria-hidden="true"></span>
+            {% else %}
+              <span class="dot dot--dormant" aria-hidden="true"></span>
+            {% endif %}
+            <span class="mono" style="flex:1;">{{ run.id[:8] }}</span>
+            <span class="t-meta">{{ run.when }}</span>
+          </button>
+        {% endfor %}
+      {% else %}
+        <div class="popover__empty">No runs yet.</div>
+      {% endif %}
+    </div>
+
+    <a class="btn btn--ghost btn--icon" title="Open folder"
+       href="file://{{ tool.path }}" target="_blank" rel="noopener noreferrer">
+      {{ icon('folder') }}
+    </a>
+    <a class="btn btn--ghost btn--icon" title="Tool settings"
+       href="/tool/{{ tool.tool_id }}/settings"
+       hx-get="/tool/{{ tool.tool_id }}/settings"
+       hx-target="#pixie-main-content"
+       hx-push-url="true">
+      {{ icon('settings') }}
+    </a>
+
+    <div class="header__divider"></div>
+
+    <button type="submit"
+            form="run-form"
+            class="btn btn--primary">
+      {{ icon('play', 12) }} Run
+      <span class="kbd" style="background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); border-color: transparent;">Ctrl+Enter</span>
+    </button>
+  </div>
+</header>

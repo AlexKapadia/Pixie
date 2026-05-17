@@ -1,0 +1,34 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
+{% call output_card(spec, panel_id, 'image_grid') %}
+  <div class="output-card__body">
+    {% if has_value %}
+      {% set imgs = value.images if value is mapping and 'images' in value else value %}
+      <div class="output-image-grid">
+        {% for img in imgs %}
+          {% set src = img.url if img.url is defined else img.data if img.data is defined else img %}
+          {% set alt = img.alt if img.alt is defined else (spec.label ~ ' image ' ~ loop.index) %}
+          <div class="output-image-grid__cell">
+            <img src="{{ src }}" alt="{{ alt }}" loading="lazy">
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}
+<script>
+  (function () {
+    var card = document.getElementById('{{ panel_id }}');
+    if (!card) return;
+    card.querySelectorAll('.output-image-grid img').forEach(function (img) {
+      img.addEventListener('click', function () {
+        var clone = img.cloneNode(true);
+        clone.style.maxWidth = '100%'; clone.style.height = 'auto'; clone.style.borderRadius = '6px';
+        var wrap = document.createElement('div');
+        wrap.appendChild(clone);
+        window.Pixie && Pixie.modal && Pixie.modal.open(wrap);
+      });
+    });
+  })();
+</script>

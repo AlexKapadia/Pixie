@@ -1,0 +1,18 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{%- set center = spec.default_center or [51.505, -0.09] -%}
+{%- set zoom = spec.default_zoom or 6 -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control map-input">
+  <div class="map-input__canvas"
+       data-pixie-map="point"
+       data-key="{{ spec.key }}"
+       data-center='{{ center | tojson }}'
+       data-zoom="{{ zoom }}"
+       {% if value %}data-initial='{{ value | tojson }}'{% endif %}
+       id="{{ field_id }}"></div>
+  <div class="map-input__caption t-meta">Click the map to place a marker. Drag the marker to refine.</div>
+  <input type="hidden" name="{{ spec.key }}"
+         data-json-type="json"
+         {% if value %}value='{{ value | tojson }}'{% endif %} />
+</div>
+{{ field_close(spec) }}

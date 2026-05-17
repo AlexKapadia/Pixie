@@ -1,0 +1,14 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, copy_button -%}
+{% set actions %}{% if has_value %}{{ copy_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'text', actions=actions) %}
+  <div class="output-card__body">
+    {% if has_value %}
+      <div class="t-body output-text" data-copy-target>
+        {%- if value is mapping and 'text' in value -%}{{ value.text }}
+        {%- else -%}{{ value }}{%- endif -%}
+      </div>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

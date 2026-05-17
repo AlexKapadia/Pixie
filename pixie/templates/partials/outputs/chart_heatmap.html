@@ -1,0 +1,48 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, expand_button -%}
+{% set actions %}{% if has_value %}{{ expand_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'chart_heatmap', actions=actions) %}
+  <div class="output-card__body">
+    {% if has_value %}
+      <div id="chart-{{ panel_id }}" class="output-chart"
+           role="img" aria-label="{{ spec.label }} heatmap"></div>
+      <script type="application/json" id="data-{{ panel_id }}">{{ value | tojson_safe | safe }}</script>
+      <script>
+        (function () {
+          var el = document.getElementById('chart-{{ panel_id }}');
+          var out = JSON.parse(document.getElementById('data-{{ panel_id }}').textContent);
+          function buildData() {
+            var cs = getComputedStyle(document.documentElement);
+            var accent = cs.getPropertyValue('--accent').trim() || '#5b6cd1';
+            var bg     = cs.getPropertyValue('--bg').trim()     || '#ffffff';
+            return [{
+              type: 'heatmap',
+              x: out.x_labels || [],
+              y: out.y_labels || [],
+              z: out.z || [],
+              colorscale: [
+                [0,    'color-mix(in oklch, ' + accent + ' 0%, ' + bg + ')'],
+                [0.25, 'color-mix(in oklch, ' + accent + ' 25%, ' + bg + ')'],
+                [0.6,  'color-mix(in oklch, ' + accent + ' 60%, ' + bg + ')'],
+                [1,    accent]
+              ],
+              showscale: true,
+              hovertemplate: '%{x} / %{y}: %{z}<extra></extra>'
+            }];
+          }
+          window.Pixie && Pixie.makeChart(el, buildData(), {
+            margin: { l: 80, r: 16, t: 14, b: 60 }
+          });
+          document.addEventListener('pixie:theme-changed', function () {
+            if (typeof Plotly === 'undefined') return;
+            try {
+              var layout = Object.assign({}, Pixie.plotlyTheme(), { margin: { l: 80, r: 16, t: 14, b: 60 } });
+              Plotly.react(el, buildData(), layout, Pixie.plotlyConfig);
+            } catch (e) {}
+          });
+        })();
+      </script>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

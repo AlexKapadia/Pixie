@@ -1,0 +1,103 @@
+{
+  "id": "live-mlp-training",
+  "name": "Live MLP Training",
+  "description": "Train a small multilayer perceptron on a CSV with live-streaming loss and accuracy curves.",
+  "version": "0.1.0",
+  "category": "ml/training",
+  "icon": "activity",
+  "layout": "form",
+  "warm_keep_seconds": 600,
+  "max_memory_mb": 2048,
+  "max_runtime_seconds": 300,
+  "concurrent": false,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "dataset_csv",
+      "type": "file",
+      "label": "Dataset (CSV)",
+      "description": "Numeric features plus one target column.",
+      "accept": ".csv"
+    },
+    {
+      "key": "target_column",
+      "type": "text",
+      "label": "Target column",
+      "default": "target"
+    },
+    {
+      "key": "hidden_sizes",
+      "type": "text",
+      "label": "Hidden layer sizes",
+      "description": "Comma-separated integers, e.g. 32,16.",
+      "default": "32,16"
+    },
+    {
+      "key": "epochs",
+      "type": "number",
+      "label": "Epochs",
+      "default": 20,
+      "min": 1,
+      "max": 500,
+      "step": 1
+    },
+    {
+      "key": "learning_rate",
+      "type": "slider",
+      "label": "Learning rate",
+      "default": 0.01,
+      "min": 0.0001,
+      "max": 0.5,
+      "step": 0.0001
+    },
+    {
+      "key": "batch_size",
+      "type": "number",
+      "label": "Batch size",
+      "default": 32,
+      "min": 4,
+      "max": 1024,
+      "step": 4
+    },
+    {
+      "key": "seed",
+      "type": "number",
+      "label": "Random seed",
+      "default": 42,
+      "min": 0,
+      "max": 2147483647,
+      "step": 1
+    }
+  ],
+  "outputs": [
+    {
+      "key": "loss_curve",
+      "type": "chart_line",
+      "label": "Loss curve",
+      "streaming": true
+    },
+    {
+      "key": "accuracy_curve",
+      "type": "chart_line",
+      "label": "Accuracy curve",
+      "streaming": true
+    },
+    {
+      "key": "final_metrics",
+      "type": "kv",
+      "label": "Final metrics"
+    },
+    {
+      "key": "epoch_summary",
+      "type": "table",
+      "label": "Per-epoch summary",
+      "columns": [
+        {"key": "epoch", "label": "Epoch", "type": "number"},
+        {"key": "train_loss", "label": "Train loss", "type": "number"},
+        {"key": "val_loss", "label": "Val loss", "type": "number"},
+        {"key": "train_acc", "label": "Train acc", "type": "number"},
+        {"key": "val_acc", "label": "Val acc", "type": "number"}
+      ]
+    }
+  ]
+}

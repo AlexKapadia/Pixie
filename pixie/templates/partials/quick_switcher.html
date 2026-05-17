@@ -1,0 +1,45 @@
+{#-
+  quick_switcher.html — Cmd/Ctrl+K modal.
+
+  Modal markup lives at the bottom of base.html so it overlays everything.
+  Tool list is delivered via window.PIXIE_TOOLS (set inline by the sidebar
+  payload) so it works without an extra round-trip.
+  Vanilla JS in pixie.js drives open/close, fuzzy filtering, and selection.
+-#}
+{%- from 'partials/icons.html' import icon -%}
+<div id="pixie-qs"
+     class="pixie-qs"
+     role="dialog"
+     aria-modal="true"
+     aria-label="Switch tool"
+     hidden>
+  <div class="pixie-qs__backdrop" data-pixie-qs-dismiss></div>
+  <div class="pixie-qs__sheet" role="document">
+    <div class="pixie-qs__input-row">
+      <span class="pixie-qs__icon" aria-hidden="true">{{ icon('search', 13) }}</span>
+      <input id="pixie-qs-input"
+             type="search"
+             class="pixie-qs__input"
+             placeholder="Switch tool, jump to settings…"
+             autocomplete="off"
+             aria-controls="pixie-qs-list"
+             aria-autocomplete="list" />
+      <span class="kbd">Esc</span>
+    </div>
+    <ul id="pixie-qs-list"
+        class="pixie-qs__list"
+        role="listbox"
+        aria-label="Tools">
+      {# Populated by pixie.js. #}
+    </ul>
+    <div class="pixie-qs__footer">
+      <span class="t-meta">
+        <span class="kbd">&uarr;</span><span class="kbd">&darr;</span> navigate
+        <span class="pixie-qs__sep">·</span>
+        <span class="kbd">Enter</span> open
+        <span class="pixie-qs__sep">·</span>
+        <span class="kbd">Esc</span> close
+      </span>
+    </div>
+  </div>
+</div>

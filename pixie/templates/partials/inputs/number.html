@@ -1,0 +1,20 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control field__control--number">
+  <input type="number"
+         class="input num mono"
+         id="{{ field_id }}"
+         name="{{ spec.key }}"
+         data-json-type="number"
+         x-model.number="values[{{ spec.key | tojson }}]"
+         {% if spec.min is not none %}min="{{ spec.min }}"{% endif %}
+         {% if spec.max is not none %}max="{{ spec.max }}"{% endif %}
+         {% if spec.step is not none %}step="{{ spec.step }}"{% endif %}
+         {% if spec.required %}required aria-required="true"{% endif %}
+         autocomplete="off"
+         {% if value is not none %}value="{{ value }}"{% endif %} />
+  {% if spec.unit %}
+  <span class="field__unit" aria-hidden="true">{{ spec.unit }}</span>
+  {% endif %}
+</div>
+{{ field_close(spec) }}

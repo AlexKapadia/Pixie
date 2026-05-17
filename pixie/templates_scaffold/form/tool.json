@@ -1,0 +1,70 @@
+{
+  "id": "{{TOOL_ID}}",
+  "name": "{{TOOL_NAME}}",
+  "description": "{{DESCRIPTION}}",
+  "version": "0.1.0",
+  "category": "general",
+  "icon": "sliders",
+  "layout": "form",
+  "warm_keep_seconds": 300,
+  "max_memory_mb": 512,
+  "max_runtime_seconds": 30,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "scale",
+      "type": "number",
+      "label": "Scale",
+      "description": "Linear multiplier applied to the sample series.",
+      "default": 100,
+      "min": 1,
+      "max": 10000,
+      "step": 1
+    },
+    {
+      "key": "intensity",
+      "type": "slider",
+      "label": "Intensity",
+      "description": "How aggressively the values grow.",
+      "default": 1.5,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "key": "shape",
+      "type": "select",
+      "label": "Shape",
+      "description": "Curve family.",
+      "default": "linear",
+      "options": [
+        {"value": "linear", "label": "Linear"},
+        {"value": "quadratic", "label": "Quadratic"},
+        {"value": "exponential", "label": "Exponential"}
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "key": "peak_value",
+      "type": "number",
+      "label": "Peak value",
+      "format": "decimal",
+      "precision": 2
+    },
+    {
+      "key": "growth_chart",
+      "type": "chart_line",
+      "label": "Series over time"
+    },
+    {
+      "key": "breakdown",
+      "type": "table",
+      "label": "Step-by-step breakdown",
+      "columns": [
+        {"key": "step", "label": "Step", "type": "number"},
+        {"key": "value", "label": "Value", "type": "number"}
+      ]
+    }
+  ]
+}

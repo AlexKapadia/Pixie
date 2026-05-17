@@ -1,0 +1,38 @@
+{# Plotly treemap of disk-bytes per tool, broken down by venv/data/models/cache.
+   Fetched into settings page via htmx on Maintenance load. #}
+<div id="disk-treemap" class="disk-treemap" style="height: 320px;"></div>
+<div class="disk-treemap__legend t-meta">
+  <span><strong>Total:</strong> {{ totals_label }}</span>
+  <span>·</span>
+  <span>venv {{ venv_label }}</span>
+  <span>·</span>
+  <span>data {{ data_label }}</span>
+  <span>·</span>
+  <span>models {{ models_label }}</span>
+  <span>·</span>
+  <span>cache {{ cache_label }}</span>
+</div>
+<script>
+(function () {
+  function go() {
+    if (typeof Plotly === 'undefined') {
+      setTimeout(go, 80);
+      return;
+    }
+    var labels = {{ tm_labels | tojson }};
+    var parents = {{ tm_parents | tojson }};
+    var values = {{ tm_values | tojson }};
+    var theme = (window.Pixie && Pixie.plotlyTheme) ? Pixie.plotlyTheme() : {};
+    Plotly.newPlot('disk-treemap', [{
+      type: 'treemap',
+      labels: labels,
+      parents: parents,
+      values: values,
+      branchvalues: 'total',
+      textinfo: 'label+value',
+      hovertemplate: '%{label}<br>%{value:.2s} B<extra></extra>'
+    }], Object.assign({ margin: { t: 4, l: 4, r: 4, b: 4 } }, theme), { displayModeBar: false, responsive: true });
+  }
+  go();
+})();
+</script>

@@ -1,0 +1,57 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
+{% call output_card(spec, panel_id, 'gantt') %}
+  <div class="output-card__body">
+    {% if has_value %}
+      {% set tasks = value.tasks if value is mapping and 'tasks' in value else value %}
+      <div class="output-gantt" id="gantt-{{ panel_id }}">
+        {# Render rows; positions computed inline (start/end may be ints or ISO dates). #}
+        <script type="application/json" id="data-{{ panel_id }}">{{ tasks | tojson_safe | safe }}</script>
+        <div class="output-gantt__rows"></div>
+        <div class="output-gantt__axis">
+          <div></div>
+          <div class="output-gantt__axis-ticks" data-ticks></div>
+        </div>
+      </div>
+      <script>
+        (function () {
+          var wrap = document.getElementById('gantt-{{ panel_id }}');
+          var tasks = JSON.parse(document.getElementById('data-{{ panel_id }}').textContent) || [];
+          var asNum = function (v) {
+            if (typeof v === 'number') return v;
+            var t = Date.parse(v); if (!isNaN(t)) return t;
+            return Number(v) || 0;
+          };
+          if (!tasks.length) return;
+          var starts = tasks.map(function (t) { return asNum(t.start); });
+          var ends   = tasks.map(function (t) { return asNum(t.end); });
+          var minT = Math.min.apply(null, starts);
+          var maxT = Math.max.apply(null, ends);
+          var span = Math.max(1, maxT - minT);
+          var rows = wrap.querySelector('.output-gantt__rows');
+          rows.innerHTML = tasks.map(function (t, i) {
+            var s = asNum(t.start), e = asNum(t.end);
+            var left  = ((s - minT) / span) * 100;
+            var width = Math.max(0.5, ((e - s) / span) * 100);
+            var colour = t.colour ? ('background:' + t.colour + ';') : '';
+            return '<div class="output-gantt__row">' +
+              '<div class="output-gantt__name" title="' + (t.name || '') + '">' + (t.name || '') + '</div>' +
+              '<div class="output-gantt__track"><div class="output-gantt__bar" style="left:' + left + '%; width:' + width + '%;' + colour + '">' + (t.label || '') + '</div></div>' +
+              '</div>';
+          }).join('');
+          var ticks = wrap.querySelector('[data-ticks]');
+          var formatT = function (v) {
+            // Heuristic: if value looks like a Date (large ms), format as ISO date.
+            if (v > 1e10) { var d = new Date(v); return d.toISOString().slice(0, 10); }
+            return String(Math.round(v));
+          };
+          ticks.innerHTML =
+            '<span>' + formatT(minT) + '</span>' +
+            '<span>' + formatT(minT + span / 2) + '</span>' +
+            '<span>' + formatT(maxT) + '</span>';
+        })();
+      </script>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

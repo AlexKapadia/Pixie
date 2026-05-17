@@ -1,0 +1,28 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, download_button -%}
+{% call output_card(spec, panel_id, 'log') %}
+  <div class="output-card__body">
+    <div class="output-log" data-level="all">
+      <div class="output-log__toolbar">
+        <select class="select" data-log-filter style="height:24px; padding:0 6px; font-size:11px; max-width:140px;"
+                aria-label="Filter log level">
+          <option value="all">All levels</option>
+          <option value="warn">Warn and error</option>
+          <option value="error">Errors only</option>
+        </select>
+      </div>
+      <div class="output-log__lines" tabindex="0" aria-label="Log output">
+        {% if has_value %}
+          {% set lines = value.lines if value is mapping and 'lines' in value else value %}
+          {% for line in (lines or []) %}
+            {% set lvl = (line.level or 'info') | lower %}
+            <div class="log-line" data-level="{{ lvl }}">
+              <span class="log-line__t mono">{{ line.t or '' }}</span>
+              <span class="log-line__lvl mono">{{ lvl | upper }}</span>
+              <span class="log-line__msg">{{ line.message or '' }}</span>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endcall %}

@@ -1,0 +1,28 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
+{% call output_card(spec, panel_id, 'progress') %}
+  <div class="output-card__body">
+    {% set pct = none %}
+    {% set label = none %}
+    {% if value is mapping %}
+      {% set pct = value.value %}
+      {% set label = value.label %}
+    {% elif has_value %}
+      {% set pct = value %}
+    {% endif %}
+    <div class="output-progress">
+      <div class="output-progress__head">
+        <span>{{ label or spec.label }}</span>
+        <span class="num">
+          {% if pct is none %}…{% else %}{{ '%.0f' % (pct * 100 if pct <= 1 else pct) }}%{% endif %}
+        </span>
+      </div>
+      <div class="progress {% if pct is none %}progress--indeterminate{% endif %}"
+           role="progressbar"
+           aria-valuemin="0" aria-valuemax="100"
+           {% if pct is not none %}aria-valuenow="{{ '%.0f' % (pct * 100 if pct <= 1 else pct) }}"{% endif %}>
+        <div class="progress__fill"
+             style="{% if pct is not none %}width: {{ (pct * 100 if pct <= 1 else pct) }}%{% endif %}"></div>
+      </div>
+    </div>
+  </div>
+{% endcall %}

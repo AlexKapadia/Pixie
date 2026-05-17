@@ -1,0 +1,139 @@
+<!doctype html>
+<html data-theme="{{ theme | default('light') }}" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Pixie{% endblock %}</title>
+    <link rel="icon" type="image/png" href="/static/pixie-logo.png" />
+
+    {# Inter Tight + JetBrains Mono per the design package. #}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+
+    <link rel="stylesheet" href="/static/pixie.css" />
+
+    {# Leaflet CSS — pinned. #}
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="anonymous" />
+
+    {# KaTeX CSS (pinned). #}
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/katex@0.16.47/dist/katex.min.css"
+          integrity="sha384-nH0MfJ44wi1dd7w6jinlyBgljjS8EJAh2JBoRad8a3VDw2K69vfaaqm4WnR+gXtA"
+          crossorigin="anonymous" />
+
+    {# CodeMirror 5.65.18 — neo (light) + material-darker (dark). #}
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css"
+          crossorigin="anonymous" />
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/neo.min.css"
+          crossorigin="anonymous" />
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css"
+          crossorigin="anonymous" />
+
+    {# diff2html CSS. #}
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/diff2html@3.4.51/bundles/css/diff2html.min.css"
+          crossorigin="anonymous" />
+
+    {# htmx + extensions. #}
+    <script defer src="https://unpkg.com/htmx.org@2.0.10/dist/htmx.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://unpkg.com/htmx-ext-sse@2.2.4" crossorigin="anonymous"></script>
+    <script defer src="https://unpkg.com/htmx-ext-json-enc@2.0.3/json-enc.js" crossorigin="anonymous"></script>
+    <script defer src="https://unpkg.com/htmx-ext-response-targets@2.0.4" crossorigin="anonymous"></script>
+    <script defer src="https://unpkg.com/htmx-ext-loading-states@2.0.1" crossorigin="anonymous"></script>
+
+    {# Alpine.js. #}
+    <script defer src="https://unpkg.com/alpinejs@3.15.8/dist/cdn.min.js" crossorigin="anonymous"></script>
+
+    {# Plotly.js. #}
+    <script defer src="https://cdn.plot.ly/plotly-3.5.1.min.js" charset="utf-8"></script>
+
+    {# Leaflet + Leaflet.heat. #}
+    <script defer
+            src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin="anonymous"></script>
+    <script defer src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js" crossorigin="anonymous"></script>
+
+    {# KaTeX + auto-render. #}
+    <script defer
+            src="https://cdn.jsdelivr.net/npm/katex@0.16.47/dist/katex.min.js"
+            integrity="sha384-CwjPRVHTvLiMBFjEoij+QZViMV5rhTOIp7CJzl24JEqpRDA1sJFHVXXLURktbYYp"
+            crossorigin="anonymous"></script>
+    <script defer
+            src="https://cdn.jsdelivr.net/npm/katex@0.16.47/dist/contrib/auto-render.min.js"
+            integrity="sha384-bjyGPfbij8/NDKJhSGZNP/khQVgtHUE5exjm4Ydllo42FwIgYsdLO2lXGmRBf5Mz"
+            crossorigin="anonymous"></script>
+
+    {# diff2html. #}
+    <script defer src="https://cdn.jsdelivr.net/npm/diff2html@3.4.51/bundles/js/diff2html-ui.min.js" crossorigin="anonymous"></script>
+
+    {# CodeMirror 5.65.18 + python/sql/javascript modes. #}
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/python/python.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/sql/sql.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js" crossorigin="anonymous"></script>
+
+    <script src="/static/pixie.js" defer></script>
+    <script src="/static/pixie-inputs.js" defer></script>
+  </head>
+  <body class="pixie"
+        hx-ext="json-enc, response-targets, loading-states"
+        data-density="{{ (persisted_settings.density if persisted_settings else None) or 'comfortable' }}"
+        data-dev-mode="{{ 'true' if developer_mode else 'false' }}">
+    <a href="#pixie-main-content" class="pixie-skip-link">Skip to main content</a>
+    <div id="pixie-toasts" aria-live="polite" aria-atomic="false"></div>
+    {# Server-rendered settings payload — applied by Pixie.applyPersistedSettings on boot
+       and on every htmx swap so theme/accent/density follow the db, not just localStorage. #}
+    <script id="pixie-settings-payload" type="application/json">{{ {
+      'theme': (persisted_settings.theme if persisted_settings else theme) or 'light',
+      'accent': (persisted_settings.accent if persisted_settings else 'indigo'),
+      'density': (persisted_settings.density if persisted_settings else 'comfortable'),
+      'developer_mode': (persisted_settings.developer_mode if persisted_settings else (developer_mode if developer_mode is defined else false))
+    } | tojson }}</script>
+    {# Quick-switcher tool payload, consumed by pixie.js. Re-injected on sidebar swaps. #}
+    {%- set _qs_tools = [] -%}
+    {%- for _group_name, _group_tools in (sidebar_groups or []) -%}
+      {%- for _entry in _group_tools -%}
+        {%- set _ = _qs_tools.append({
+          'id': _entry.tool_id,
+          'name': _entry.name,
+          'category': _entry.category,
+          'status': _entry.status,
+          'validation': _entry.validation,
+        }) -%}
+      {%- endfor -%}
+    {%- endfor -%}
+    <script id="pixie-tools-payload" type="application/json">{{ _qs_tools | tojson }}</script>
+    <div class="app-shell" x-data="{ sidebarCollapsed: false }">
+      {% include "partials/sidebar.html" %}
+      <div class="main">
+        {% block main %}
+          {% block header %}{% endblock %}
+          <div class="main__body" id="pixie-main-content">
+            {% block body %}{% endblock %}
+          </div>
+        {% endblock %}
+        <footer class="main__footer">
+          <span>pixie</span>
+          <span class="sep">·</span>
+          <span>v{{ version | default('0.1.0') }}</span>
+          <span class="sep">·</span>
+          <span>127.0.0.1:{{ port | default(7860) }}</span>
+          <span class="sep">·</span>
+          <a href="https://github.com/anthropics/claude-code" target="_blank" rel="noopener noreferrer">docs</a>
+        </footer>
+      </div>
+    </div>
+    {% include "partials/quick_switcher.html" %}
+    {# Shared context menu surface (sidebar tools, run history, output cards). #}
+    <div id="pixie-ctxmenu" class="pixie-ctxmenu" role="menu" hidden></div>
+  </body>
+</html>

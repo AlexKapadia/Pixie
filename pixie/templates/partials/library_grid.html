@@ -1,0 +1,12 @@
+{% for card in library_cards %}
+  {% include "partials/library_card.html" %}
+{% endfor %}
+
+{% if library_next_page %}
+<div class="library__more"
+     hx-get="/library/_grid?page={{ library_next_page }}{% if library_state.tool %}&tool={{ library_state.tool }}{% endif %}{% if library_state.mime %}&mime={{ library_state.mime }}{% endif %}{% if library_state.starred %}&starred=true{% endif %}{% if library_state.label %}&label={{ library_state.label }}{% endif %}{% if library_state.tag %}&tag={{ library_state.tag }}{% endif %}&sort={{ library_state.sort }}"
+     hx-trigger="revealed"
+     hx-swap="outerHTML">
+  <span class="t-meta">Loading more…</span>
+</div>
+{% endif %}

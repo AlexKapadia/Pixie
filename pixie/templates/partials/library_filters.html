@@ -1,0 +1,90 @@
+{# Library filters sidebar -- tools, mime families, starred, labels, tags. #}
+{%- macro filter_url(extra) -%}
+/library?{% set parts = [] -%}
+{%- for k, v in extra.items() if v -%}{%- set _ = parts.append(k ~ '=' ~ v) -%}{%- endfor -%}
+{{- parts | join('&') -}}
+{%- endmacro -%}
+
+<aside class="library__filters" aria-label="Filters">
+  <div class="library__filter-section">
+    <h3 class="t-eyebrow">Tool</h3>
+    <ul class="library__filter-list" role="list">
+      <li>
+        <a class="library__filter-link{% if not library_state.tool %} is-active{% endif %}"
+           href="{{ filter_url({'mime': library_state.mime, 'starred': 'true' if library_state.starred else None, 'tag': library_state.tag, 'label': library_state.label}) }}">
+          <span class="library__filter-name">All tools</span>
+          <span class="library__filter-count mono">{{ library_filters.total }}</span>
+        </a>
+      </li>
+      {% for tool in library_filters.tools %}
+      <li>
+        <a class="library__filter-link{% if library_state.tool == tool.id %} is-active{% endif %}"
+           href="{{ filter_url({'tool': tool.id, 'mime': library_state.mime, 'starred': 'true' if library_state.starred else None, 'tag': library_state.tag, 'label': library_state.label}) }}">
+          <span class="library__filter-name">{{ tool.name }}</span>
+          <span class="library__filter-count mono">{{ tool.count }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="library__filter-section">
+    <h3 class="t-eyebrow">Format</h3>
+    <ul class="library__filter-list" role="list">
+      {% for family in library_filters.mimes %}
+      <li>
+        <a class="library__filter-link{% if library_state.mime == family.family %} is-active{% endif %}"
+           href="{{ filter_url({'tool': library_state.tool, 'mime': family.family, 'starred': 'true' if library_state.starred else None, 'tag': library_state.tag, 'label': library_state.label}) }}">
+          <span class="library__filter-name">{{ family.family.rstrip('/') }}</span>
+          <span class="library__filter-count mono">{{ family.count }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="library__filter-section">
+    <h3 class="t-eyebrow">Quick filters</h3>
+    <ul class="library__filter-list" role="list">
+      <li>
+        <a class="library__filter-link{% if library_state.starred %} is-active{% endif %}"
+           href="{{ filter_url({'starred': 'true', 'tool': library_state.tool, 'mime': library_state.mime, 'tag': library_state.tag, 'label': library_state.label}) }}">
+          <span class="library__filter-name">★ Starred only</span>
+        </a>
+      </li>
+      {% if library_state.tool or library_state.mime or library_state.starred or library_state.label or library_state.tag %}
+      <li>
+        <a class="library__filter-link library__filter-reset" href="/library">Reset all filters</a>
+      </li>
+      {% endif %}
+    </ul>
+  </div>
+
+  {% if library_filters.tags %}
+  <div class="library__filter-section">
+    <h3 class="t-eyebrow">Tags</h3>
+    <div class="library__tag-chips">
+      {% for tag in library_filters.tags %}
+        <a class="library__chip{% if library_state.tag == tag %} is-active{% endif %}"
+           href="{{ filter_url({'tag': tag}) }}">{{ tag }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if library_filters.labels %}
+  <div class="library__filter-section">
+    <h3 class="t-eyebrow">Labels</h3>
+    <ul class="library__filter-list" role="list">
+      {% for label in library_filters.labels %}
+      <li>
+        <a class="library__filter-link{% if library_state.label == label %} is-active{% endif %}"
+           href="{{ filter_url({'label': label}) }}">
+          <span class="library__filter-name">{{ label }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</aside>

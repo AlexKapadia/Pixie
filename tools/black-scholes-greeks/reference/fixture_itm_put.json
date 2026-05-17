@@ -1,0 +1,19 @@
+{
+  "name": "ITM 60-day put",
+  "source": "BS: S=95, K=100, T=60/365, r=4%, sigma=25%, put",
+  "inputs": {
+    "spot": 95.0,
+    "strike": 100.0,
+    "days_to_expiry": 60,
+    "rate": 4.0,
+    "volatility": 25.0,
+    "option_type": "put"
+  },
+  "expected_outputs": {
+    "price": 6.42
+  },
+  "tolerance": {
+    "price": {"rtol": 0.02, "atol": 0.2}
+  },
+  "tags": ["itm", "put"]
+}

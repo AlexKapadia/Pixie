@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.pyc
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+
+# Caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Per-tool artefacts
+tools/*/.venv/
+tools/*/data/
+tools/*/.env
+tools/*/__pycache__/
+
+# Pixie runtime database
+pixie.db
+pixie.db-journal
+pixie.db-wal
+pixie.db-shm
+
+# Environment + editor + OS
+.env
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Orchestrator-only directories
+.design_pkg/
+.build/
+
+# Local-first output store (Wave 2 — artefact persistence)
+artefacts/
+
+# Test/dev artefacts
+.benchmarks/
+.cache/
+.coverage
+htmlcov/
+
+# Docs site (Astro Starlight)
+docs-site/node_modules/
+docs-site/dist/
+docs-site/.astro/
+

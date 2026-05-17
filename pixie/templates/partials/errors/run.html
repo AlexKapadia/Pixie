@@ -1,0 +1,60 @@
+{#-
+  run.html — "Run failed."
+
+  Caller context:
+    tool_id    — required
+    tool_label — optional
+    traceback  — Python traceback as text (optional)
+    inputs_json — the input payload as JSON (optional, for "View inputs")
+    exception_type, exception_message — optional summary fields
+-#}
+{%- from 'partials/error.html' import error_block -%}
+{%- set body_html -%}
+  {%- if inputs_json -%}
+    <details class="pixie-error__details">
+      <summary class="t-meta">View submitted inputs</summary>
+      <pre class="pixie-error__pre mono">{{ inputs_json }}</pre>
+    </details>
+  {%- endif -%}
+  {%- if traceback -%}
+    <details class="pixie-error__details" open>
+      <summary class="t-meta">Show traceback</summary>
+      <pre class="pixie-error__pre mono">{{ traceback }}</pre>
+    </details>
+  {%- endif -%}
+{%- endset -%}
+{{ error_block(
+     kind='run',
+     severity='error',
+     tool_id=tool_id,
+     tool_label=tool_label,
+     headline='Run failed.',
+     message=(
+       (exception_type ~ ': ' ~ exception_message) if exception_type
+       else 'The tool raised an exception while handling your input.'
+     ),
+     body_html=body_html,
+     primary_action={
+       'label': 'Retry',
+       'kind': 'copy',
+       'icon': 'refresh',
+       'text': 'click Run again',
+       'toast': 'Resubmit the form to retry.'
+     },
+     secondary_actions=[
+       {
+         'label': 'Copy traceback',
+         'kind': 'copy',
+         'icon': 'copy',
+         'text': traceback or '',
+         'toast': 'Traceback copied.'
+       },
+       {
+         'label': 'Hand off to debug-tool',
+         'kind': 'copy-prompt',
+         'icon': 'wand',
+         'prompt': 'In Claude Code, run: debug the ' ~ tool_id ~ ' tool — its /run handler raised. Traceback:\n\n' ~ (traceback or '(no traceback captured)'),
+       },
+     ],
+     hint='The "Retry" button is intentional shorthand — modify the form and click Run again.'
+) }}

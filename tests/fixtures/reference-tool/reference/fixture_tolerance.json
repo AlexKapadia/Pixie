@@ -1,0 +1,12 @@
+{
+  "name": "Tolerance: sqrt(2) approx 1.41",
+  "source": "sqrt(2) = 1.41421356...; expected truncated to 2dp",
+  "inputs": { "x": 2 },
+  "expected_outputs": {
+    "result": 1.41
+  },
+  "tolerance": {
+    "result": { "rtol": 1.0e-2 }
+  },
+  "tags": ["tolerance"]
+}

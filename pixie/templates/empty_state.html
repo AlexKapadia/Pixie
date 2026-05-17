@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{%- from 'partials/icons.html' import icon -%}
+{% block title %}No tools yet — Pixie{% endblock %}
+
+{% block body %}
+<div class="pixie-empty">
+  <div class="pixie-empty__inner">
+
+    {# ---------- Hero ---------- #}
+    <div class="pixie-empty__hero">
+      <img src="/static/pixie-logo.png"
+           alt="Pixie"
+           width="56" height="56"
+           class="pixie-empty__logo"
+           onerror="this.style.display='none';" />
+      <div class="pixie-empty__hero-text">
+        <span class="badge badge--muted mono">Pixie · v{{ version | default('0.1.0') }}</span>
+        <h2 class="pixie-empty__title">No tools yet.</h2>
+        <p class="t-body pixie-empty__lede">
+          Tools appear here automatically. To add one, open Claude Code in this
+          folder and describe what you'd like to build &mdash; Pixie does not
+          install, generate, or modify tools itself.
+        </p>
+      </div>
+    </div>
+
+    {# ---------- Watched path strip ---------- #}
+    <div class="pixie-empty__watched">
+      <span class="pixie-empty__watched-icon" aria-hidden="true">{{ icon('folder', 13) }}</span>
+      <div class="pixie-empty__watched-text">
+        <div class="t-meta">Watching</div>
+        <div class="mono pixie-empty__watched-path">{{ tools_dir | default('tools/') }}</div>
+      </div>
+      <span class="badge badge--muted">0 tools</span>
+    </div>
+
+    {# ---------- Try one of these prompts ---------- #}
+    <div class="pixie-empty__prompts">
+      <div class="pixie-empty__prompts-head">
+        <span class="t-eyebrow">Try one of these in Claude Code</span>
+        <span class="t-meta">Click any to copy.</span>
+      </div>
+      <div class="pixie-empty__prompts-list">
+
+        <button type="button" class="pixie-empty__prompt"
+                data-pixie-copy="Add a Pixie tool that converts currencies using the Frankfurter API"
+                data-pixie-copy-toast="Prompt copied. Paste into Claude Code.">
+          <span class="pixie-empty__prompt-text mono">Add a Pixie tool that converts currencies using the Frankfurter API</span>
+          <span class="pixie-empty__prompt-icon" aria-hidden="true">{{ icon('copy', 13) }}</span>
+        </button>
+
+        <button type="button" class="pixie-empty__prompt"
+                data-pixie-copy="Add github.com/karpathy/llm.c as a Pixie tool"
+                data-pixie-copy-toast="Prompt copied. Paste into Claude Code.">
+          <span class="pixie-empty__prompt-text mono">Add github.com/karpathy/llm.c as a Pixie tool</span>
+          <span class="pixie-empty__prompt-icon" aria-hidden="true">{{ icon('copy', 13) }}</span>
+        </button>
+
+        <button type="button" class="pixie-empty__prompt"
+                data-pixie-copy="Make me a Pixie tool that summarises a CSV"
+                data-pixie-copy-toast="Prompt copied. Paste into Claude Code.">
+          <span class="pixie-empty__prompt-text mono">Make me a Pixie tool that summarises a CSV</span>
+          <span class="pixie-empty__prompt-icon" aria-hidden="true">{{ icon('copy', 13) }}</span>
+        </button>
+
+      </div>
+    </div>
+
+    {# ---------- Hand-built hint ---------- #}
+    <div class="pixie-empty__hint">
+      <span class="t-meta">
+        Or hand-build a tool &mdash; see the worked example at
+        <span class="mono">tools/example-compound-interest/</span>.
+      </span>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

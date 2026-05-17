@@ -1,0 +1,22 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, copy_button -%}
+{% set actions %}{% if has_value %}{{ copy_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'markdown', actions=actions) %}
+  <div class="output-card__body">
+    {% if has_value %}
+      {% set src = value.text if value is mapping and 'text' in value else value %}
+      <div class="output-md" data-copy-target data-md-source="{{ src }}"></div>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}
+{# marked.js loaded once per page when any markdown output appears. #}
+<script>
+  if (!window.__pixieMarkedLoaded) {
+    window.__pixieMarkedLoaded = true;
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js';
+    s.defer = true;
+    document.head.appendChild(s);
+  }
+</script>

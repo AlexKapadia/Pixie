@@ -1,0 +1,26 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
+{% call output_card(spec, panel_id, 'image_compare') %}
+  <div class="output-card__body">
+    {% if has_value %}
+      {% set before = value.before.url if value.before is mapping and value.before.url is defined
+                      else value.before %}
+      {% set after = value.after.url if value.after is mapping and value.after.url is defined
+                     else value.after %}
+      <div class="output-image-compare">
+        <img class="output-image-compare__after"  src="{{ after }}"  alt="After image" loading="lazy">
+        <div class="output-image-compare__clip">
+          <img src="{{ before }}" alt="Before image" loading="lazy">
+        </div>
+        <div class="output-image-compare__handle" aria-hidden="true"></div>
+        <input type="range" min="0" max="100" value="50"
+               class="output-image-compare__range"
+               aria-label="Image compare slider">
+      </div>
+      <div class="t-meta" style="display:flex; justify-content:space-between; margin-top:6px;">
+        <span>before</span><span>after</span>
+      </div>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

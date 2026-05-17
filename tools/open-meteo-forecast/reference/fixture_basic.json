@@ -1,0 +1,11 @@
+{
+  "name": "London 3-day forecast",
+  "source": "Live Open-Meteo call for London — values change daily; structural fixture only.",
+  "inputs": {
+    "location": {"lat": 51.5074, "lng": -0.1278},
+    "days_ahead": 3
+  },
+  "expected_outputs": {},
+  "tolerance": {},
+  "tags": ["weather", "geo", "live"]
+}

@@ -1,0 +1,18 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{%- set initial_text = (value | tojson(indent=2)) if value is not none else '' -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control json-editor"
+     x-data='{ err: null }'>
+  <textarea class="textarea mono json-editor__src"
+            id="{{ field_id }}"
+            data-pixie-code
+            data-language="json"
+            data-pixie-json
+            rows="6"
+            spellcheck="false">{{ initial_text }}</textarea>
+  <input type="hidden" name="{{ spec.key }}"
+         data-json-type="json"
+         value='{{ initial_text }}' />
+  <div class="json-editor__err" role="alert" x-show="err" x-text="err"></div>
+</div>
+{{ field_close(spec) }}

@@ -1,0 +1,55 @@
+{#-
+  validation.html — "Validation failed."
+
+  Renders the full ValidationReport. Used wherever the tool can't run yet
+  because its 11-check validation is failing.
+
+  Caller context:
+    tool_id    — required
+    tool_label — optional
+    report     — required, the ValidationReport dict (json-decoded)
+-#}
+{%- from 'partials/error.html' import error_block -%}
+{%- from 'partials/validation_report.html' import validation_report_body -%}
+{%- set sev = 'error' if report.overall == 'fail' else 'warn' -%}
+{%- set n_failed = report.checks | selectattr('status', 'equalto', 'fail') | list | length -%}
+{%- set n_warn = report.checks | selectattr('status', 'equalto', 'warn') | list | length -%}
+{%- set summary -%}
+  {%- if n_failed > 0 -%}
+    Validator reports {{ n_failed }} of {{ report.checks | length }} checks failing.
+  {%- elif n_warn > 0 -%}
+    Validator reports {{ n_warn }} of {{ report.checks | length }} checks with warnings.
+  {%- else -%}
+    Validator passed every check, but overall is marked '{{ report.overall }}'.
+  {%- endif -%}
+{%- endset -%}
+{{ error_block(
+     kind='validation',
+     severity=sev,
+     tool_id=tool_id,
+     tool_label=tool_label,
+     headline=(tool_label or tool_id) ~ " won't run yet.",
+     message=summary | trim,
+     body_html=validation_report_body(report),
+     primary_action={
+       'label': 'Re-validate',
+       'method': 'post',
+       'icon': 'refresh',
+       'url': '/api/tools/' ~ tool_id ~ '/validate',
+     },
+     secondary_actions=[
+       {
+         'label': 'Hand off to debug-tool',
+         'kind': 'copy-prompt',
+         'icon': 'wand',
+         'prompt': 'In Claude Code, run: debug the ' ~ tool_id ~ ' tool. ' ~ n_failed ~ ' of ' ~ (report.checks | length) ~ ' validation checks are failing.',
+       },
+       {
+         'label': 'Open tool folder',
+         'kind': 'link',
+         'icon': 'folder',
+         'url': '/api/tools/' ~ tool_id ~ '/reveal',
+       },
+     ],
+     hint='Failing rows expand by default — read the message and the details before re-validating.'
+) }}

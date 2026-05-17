@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{%- from 'partials/error.html' import error_block -%}
+{% block title %}{{ tool_label }} — won't parse — Pixie{% endblock %}
+{% block body %}
+<div class="tool-body" data-layout="form">
+  <section class="panel-col panel-col--outputs" style="grid-column: 1 / -1;">
+    <div class="panel-col__body">
+      {{ error_block(
+           kind='schema',
+           severity='warn',
+           tool_id=tool_id,
+           tool_label=tool_label,
+           headline="This tool's tool.json won't parse.",
+           message='Pixie cannot render a form until the schema is valid JSON matching the Pixie tool schema.',
+           details=parse_error,
+           primary_action={
+             'label': 'Re-validate',
+             'method': 'post',
+             'icon': 'refresh',
+             'url': '/api/tools/' ~ tool_id ~ '/validate',
+           },
+           secondary_actions=[
+             {
+               'label': 'Hand off to debug-tool',
+               'kind': 'copy-prompt',
+               'icon': 'wand',
+               'prompt': 'In Claude Code, run: debug the ' ~ tool_id ~ ' tool — its tool.json fails to parse.',
+             },
+           ],
+           hint='The validator names the offending field. Most parse errors are a missing comma or an unknown type.'
+      ) }}
+    </div>
+  </section>
+</div>
+{% endblock %}

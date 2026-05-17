@@ -1,0 +1,192 @@
+{%- from 'partials/icons.html' import icon -%}
+<aside class="sidebar scroll"
+       :class="{ 'sidebar--collapsed': sidebarCollapsed }"
+       aria-label="Tools">
+  {# ---------- Header: logo + brand + collapse ---------- #}
+  <div class="sidebar__header">
+    <div class="sidebar__logo">
+      {# Falls back to a literal P glyph if the logo asset is missing. #}
+      <img src="/static/pixie-logo.png" alt="" onerror="this.style.display='none'; this.parentNode.textContent='P';" />
+    </div>
+    <div class="sidebar__brand">
+      <div class="sidebar__label">Pixie</div>
+      <div class="sidebar__sub mono">~/projects/pixie</div>
+    </div>
+    <button type="button"
+            class="btn btn--ghost btn--icon btn--sm sidebar__collapse"
+            title="Collapse sidebar"
+            @click="sidebarCollapsed = !sidebarCollapsed">
+      {{ icon('panel-left', 13) }}
+    </button>
+  </div>
+
+  {# ---------- Workspace switcher (RESEARCH_scale s2.6) ---------- #}
+  {% include "partials/workspace_switcher.html" %}
+
+  {# ---------- Search (visual only — wiring is Phase 4e) ---------- #}
+  <div class="sidebar__search">
+    <div class="sidebar__search-inner">
+      {{ icon('search', 12) }}
+      <input type="search" placeholder="Search tools" aria-label="Search tools" />
+      <span class="kbd">Ctrl K</span>
+    </div>
+  </div>
+
+  {# ---------- Library (cross-tool artefact gallery, Wave 2 addition) ---------- #}
+  <div class="sidebar__library">
+    <a class="tool-row tool-row--library{% if active_tool_id == '__library__' %} is-active{% endif %}"
+       href="/library"
+       hx-get="/library"
+       hx-target="#pixie-main-content"
+       hx-swap="innerHTML"
+       hx-push-url="true"
+       title="All saved outputs across every tool">
+      <span class="tool-row__icon">{{ icon('folder', 13) }}</span>
+      <span class="tool-row__name">Library</span>
+    </a>
+  </div>
+
+  {# ---------- Favourites (pinned tools — RESEARCH_scale s2.5) ---------- #}
+  {% if sidebar_favourites %}
+    <div class="sidebar__favourites">
+      <div class="sidebar__section-head">
+        <span class="t-eyebrow">Pinned</span>
+        <span class="sidebar__section-count mono">{{ sidebar_favourites | length }}</span>
+      </div>
+      <div class="sidebar__section-body">
+        {% for entry in sidebar_favourites %}
+          <a class="tool-row{% if active_tool_id == entry.tool_id %} is-active{% endif %}"
+             href="/tool/{{ entry.tool_id }}"
+             hx-get="/tool/{{ entry.tool_id }}"
+             hx-target="#pixie-main-content"
+             hx-swap="innerHTML"
+             hx-push-url="true"
+             data-tool-id="{{ entry.tool_id }}"
+             title="{{ entry.description or entry.name }}">
+            <span class="tool-row__icon">{{ icon(entry.icon or 'bolt', 13) }}</span>
+            <span class="tool-row__name">{{ entry.name }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---------- Recent runs (auto-curated — RESEARCH_scale s2.5) ---------- #}
+  {% if sidebar_recent %}
+    <div class="sidebar__recent">
+      <div class="sidebar__section-head">
+        <span class="t-eyebrow">Recent</span>
+        <span class="sidebar__section-count mono">{{ sidebar_recent | length }}</span>
+      </div>
+      <div class="sidebar__section-body">
+        {% for entry in sidebar_recent %}
+          <a class="tool-row{% if active_tool_id == entry.tool_id %} is-active{% endif %}"
+             href="/tool/{{ entry.tool_id }}"
+             hx-get="/tool/{{ entry.tool_id }}"
+             hx-target="#pixie-main-content"
+             hx-swap="innerHTML"
+             hx-push-url="true"
+             data-tool-id="{{ entry.tool_id }}"
+             title="{{ entry.description or entry.name }}">
+            <span class="tool-row__icon">{{ icon(entry.icon or 'history', 13) }}</span>
+            <span class="tool-row__name">{{ entry.name }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---------- Tools grouped by category (virtualised when N>30) ---------- #}
+  <div class="sidebar__scroll scroll"
+       data-pixie-virtualise="{% if sidebar_total_tools and sidebar_total_tools > 30 %}1{% else %}0{% endif %}">
+    {% if sidebar_groups %}
+      {% for group_name, group_tools in sidebar_groups %}
+        <div class="sidebar__section">
+          <div class="sidebar__section-head">
+            <span class="t-eyebrow">{{ group_name }}</span>
+            <span class="sidebar__section-count mono">{{ group_tools | length }}</span>
+          </div>
+          <div class="sidebar__section-body">
+            {% for tool_entry in group_tools %}
+              <a class="tool-row{% if active_tool_id == tool_entry.tool_id %} is-active{% endif %}"
+                 href="/tool/{{ tool_entry.tool_id }}"
+                 hx-get="/tool/{{ tool_entry.tool_id }}"
+                 hx-target="#pixie-main-content"
+                 hx-swap="innerHTML"
+                 hx-push-url="true"
+                 data-tool-id="{{ tool_entry.tool_id }}"
+                 title="{{ tool_entry.description or tool_entry.name }}">
+                <span class="tool-row__icon">{{ icon(tool_entry.icon or 'bolt', 13) }}</span>
+                <span class="tool-row__name">{{ tool_entry.name }}</span>
+                {% if tool_entry.validation == 'fail' %}
+                  <span class="tool-row__validation tool-row__validation--fail">fail</span>
+                {% elif tool_entry.validation == 'warn' %}
+                  <span class="tool-row__validation tool-row__validation--warn">warn</span>
+                {% endif %}
+                {% if tool_entry.status == 'running' %}
+                  <span class="dot dot--running dot--pulse" aria-label="running"></span>
+                {% elif tool_entry.status == 'failed' %}
+                  <span class="dot dot--error" aria-label="failed"></span>
+                {% elif tool_entry.status == 'warm' %}
+                  <span class="dot dot--dormant" aria-label="warm"></span>
+                {% else %}
+                  <span class="dot dot--dormant" aria-label="dormant"></span>
+                {% endif %}
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="sidebar__section">
+        <div class="sidebar__section-head">
+          <span class="t-eyebrow">Tools</span>
+        </div>
+        <div class="sidebar__section-body">
+          <div class="t-meta" style="padding: 6px 10px;">No tools yet. Add one under <span class="mono">tools/</span>.</div>
+        </div>
+      </div>
+    {% endif %}
+
+    {# ---------- Browse all + archived toggle ---------- #}
+    <div class="sidebar__archived-toggle">
+      <a href="/tools"
+         hx-get="/tools"
+         hx-target="#pixie-main-content"
+         hx-push-url="true"
+         class="t-meta">{{ icon('list', 11) }} All tools</a>
+      {% if archived_count and archived_count > 0 %}
+        <a href="/tools?archived=1"
+           hx-get="/tools?archived=1"
+           hx-target="#pixie-main-content"
+           hx-push-url="true"
+           class="t-meta">Show archived ({{ archived_count }})</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ---------- Footer: running count + global settings cog ---------- #}
+  <div class="sidebar__footer">
+    {% if running_count and running_count > 0 %}
+      <span class="dot dot--running dot--pulse" aria-hidden="true"></span>
+    {% else %}
+      <span class="dot dot--dormant" aria-hidden="true"></span>
+    {% endif %}
+    <span class="sidebar__footer-text"><span class="num mono">{{ running_count or 0 }}</span> running</span>
+    <span class="sidebar__footer-spacer"></span>
+    <button type="button"
+            class="btn btn--ghost btn--icon btn--sm"
+            title="Toggle theme"
+            onclick="window.Pixie && Pixie.toggleTheme()">
+      {{ icon('sun', 13) }}
+    </button>
+    <a class="btn btn--ghost btn--icon btn--sm"
+       href="/settings"
+       hx-get="/settings"
+       hx-target="#pixie-main-content"
+       hx-push-url="true"
+       title="Settings">
+      {{ icon('settings', 13) }}
+    </a>
+  </div>
+</aside>

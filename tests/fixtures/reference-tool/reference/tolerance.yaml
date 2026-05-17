@@ -1,0 +1,7 @@
+defaults:
+  number: { rtol: 1.0e-6, atol: 1.0e-9 }
+  text:   { compare: exact }
+options:
+  on_extra_output_key: warn
+  on_missing_expected_key: fail
+  truncate_diff_chars: 400

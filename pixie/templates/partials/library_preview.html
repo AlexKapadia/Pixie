@@ -1,0 +1,22 @@
+{# Hover preview pane. Lazy-loaded via htmx on card hover. #}
+<div class="library-preview" role="dialog" aria-label="Preview">
+  {% if card.mime and card.mime.startswith('image/') %}
+    <img class="library-preview__image" src="{{ card.file_url }}" alt="{{ card.filename }}" />
+  {% elif card.mime and card.mime.startswith('audio/') %}
+    <audio controls src="{{ card.file_url }}" preload="metadata"></audio>
+  {% elif card.mime and card.mime.startswith('video/') %}
+    <video controls src="{{ card.file_url }}" preload="metadata"
+           poster="{{ card.thumb_url }}"></video>
+  {% else %}
+    <pre class="library-preview__text"
+         hx-get="{{ card.preview_url }}?lines=50"
+         hx-trigger="load" hx-swap="innerHTML">Loading…</pre>
+  {% endif %}
+  <footer class="library-preview__meta t-meta">
+    <span class="mono">{{ card.filename }}</span>
+    <span class="sep">·</span>
+    <span>{{ card.size_label }}</span>
+    <span class="sep">·</span>
+    <span>{{ card.mime }}</span>
+  </footer>
+</div>

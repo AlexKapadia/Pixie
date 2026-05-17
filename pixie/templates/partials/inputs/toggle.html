@@ -1,0 +1,21 @@
+{%- from "_macros.html" import show_if_attr -%}
+<div class="field field--toggle"
+     data-key="{{ spec.key }}"
+     {{ show_if_attr(spec) }}>
+  <label class="toggle" for="{{ field_id }}">
+    <span class="toggle__text">
+      <span class="field__label" style="margin:0;">{{ spec.label }}{% if spec.required %}<span class="field__req" aria-hidden="true">*</span>{% endif %}</span>
+      {% if spec.description %}<span class="field__hint">{{ spec.description }}</span>{% endif %}
+    </span>
+    <input type="checkbox"
+           class="sr-only toggle__input"
+           id="{{ field_id }}"
+           name="{{ spec.key }}"
+           data-json-type="boolean"
+           x-model="values[{{ spec.key | tojson }}]"
+           {% if value %}checked{% endif %} />
+    <span class="toggle__track" aria-hidden="true">
+      <span class="toggle__knob"></span>
+    </span>
+  </label>
+</div>

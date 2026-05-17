@@ -1,0 +1,58 @@
+{
+  "id": "whisper-transcription",
+  "name": "Whisper Transcription",
+  "description": "Transcribe an audio file with faster-whisper. Streams segments as they're produced and returns a per-segment table with timestamps and speaker tags.",
+  "version": "0.1.0",
+  "category": "audio/asr",
+  "icon": "mic",
+  "layout": "form",
+  "warm_keep_seconds": 600,
+  "max_memory_mb": 4096,
+  "max_runtime_seconds": 600,
+  "concurrent": false,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "audio_input",
+      "type": "file",
+      "label": "Audio file",
+      "description": "WAV, MP3, FLAC, OGG (anything ffmpeg reads).",
+      "accept": ".wav,.mp3,.flac,.ogg,.m4a"
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": "Language",
+      "default": "auto",
+      "options": [
+        {"value": "auto", "label": "Auto-detect"},
+        {"value": "en", "label": "English"},
+        {"value": "fr", "label": "French"},
+        {"value": "de", "label": "German"},
+        {"value": "es", "label": "Spanish"},
+        {"value": "it", "label": "Italian"},
+        {"value": "ja", "label": "Japanese"},
+        {"value": "zh", "label": "Chinese"}
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "key": "transcript",
+      "type": "stream_text",
+      "label": "Streaming transcript",
+      "streaming": true
+    },
+    {
+      "key": "segments",
+      "type": "table",
+      "label": "Segments with timestamps",
+      "columns": [
+        {"key": "start", "label": "Start (s)", "type": "number"},
+        {"key": "end", "label": "End (s)", "type": "number"},
+        {"key": "speaker", "label": "Speaker", "type": "string"},
+        {"key": "text", "label": "Text", "type": "string"}
+      ]
+    }
+  ]
+}

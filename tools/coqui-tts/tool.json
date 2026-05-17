@@ -1,0 +1,49 @@
+{
+  "id": "coqui-tts",
+  "name": "Text-to-Speech",
+  "description": "Synthesise speech from text. Uses an offline TTS engine (pyttsx3 / SAPI on Windows). Returns a WAV data URL.",
+  "version": "0.1.0",
+  "category": "audio/tts",
+  "icon": "volume-2",
+  "layout": "form",
+  "warm_keep_seconds": 300,
+  "max_memory_mb": 1024,
+  "max_runtime_seconds": 120,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "text",
+      "type": "textarea",
+      "label": "Text",
+      "description": "Up to a few thousand characters.",
+      "default": "Hello from Pixie. This is a synthesised voice."
+    },
+    {
+      "key": "voice",
+      "type": "select",
+      "label": "Voice",
+      "default": "en-default",
+      "options": [
+        {"value": "en-default", "label": "English (system default)"},
+        {"value": "en-male", "label": "English (male)"},
+        {"value": "en-female", "label": "English (female)"}
+      ]
+    },
+    {
+      "key": "rate",
+      "type": "slider",
+      "label": "Speech rate",
+      "default": 180,
+      "min": 80,
+      "max": 320,
+      "step": 10
+    }
+  ],
+  "outputs": [
+    {
+      "key": "speech",
+      "type": "audio",
+      "label": "Synthesised speech"
+    }
+  ]
+}

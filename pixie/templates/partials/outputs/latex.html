@@ -1,0 +1,14 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, copy_button -%}
+{% set actions %}{% if has_value %}{{ copy_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'latex', actions=actions) %}
+  <div class="output-card__body">
+    {% if has_value %}
+      {% set src = value.text if value is mapping and 'text' in value else value %}
+      {# Wrap the source so KaTeX auto-render can find delimiters; the partial
+         supports either inline ($…$) or display ($$…$$) source as-is. #}
+      <div class="output-latex" data-copy-target>{{ src }}</div>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

@@ -1,0 +1,61 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{%- set options_json = spec.options | dump_options | tojson -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control multiselect"
+     x-data='{
+       open: false,
+       opts: {{ options_json }},
+       get selected() {
+         const v = values[{{ spec.key | tojson }}];
+         return Array.isArray(v) ? v : [];
+       },
+       isOn(val) { return this.selected.some(s => s === val); },
+       toggle(val) {
+         const cur = this.selected.slice();
+         const i = cur.findIndex(s => s === val);
+         if (i >= 0) cur.splice(i, 1); else cur.push(val);
+         values[{{ spec.key | tojson }}] = cur;
+       },
+       remove(val) { this.toggle(val); },
+       labelOf(val) { const m = this.opts.find(o => o.value === val); return m ? m.label : String(val); }
+     }'
+     x-init="if (!Array.isArray(values[{{ spec.key | tojson }}])) values[{{ spec.key | tojson }}] = []"
+     @click.outside="open = false"
+     @keydown.escape.window="open = false">
+  <div class="multiselect__display input"
+       id="{{ field_id }}"
+       role="combobox"
+       tabindex="0"
+       :aria-expanded="open"
+       aria-haspopup="listbox"
+       @click="open = !open">
+    <template x-for="val in selected" :key="String(val)">
+      <span class="multiselect__chip">
+        <span x-text="labelOf(val)"></span>
+        <button type="button" class="multiselect__chip-x"
+                aria-label="Remove"
+                @click.stop="remove(val)">
+          <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m4 4 8 8M12 4l-8 8"/></svg>
+        </button>
+      </span>
+    </template>
+    <span class="multiselect__placeholder" x-show="selected.length === 0">Select…</span>
+    <svg class="select__chev" width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="m3 6 5 5 5-5"/></svg>
+  </div>
+  <div class="select__pop popover" x-show="open" x-cloak x-transition.opacity.duration.120ms>
+    <div class="select__list" role="listbox" aria-multiselectable="true">
+      <template x-for="opt in opts" :key="String(opt.value)">
+        <label class="popover__item">
+          <input type="checkbox"
+                 :checked="isOn(opt.value)"
+                 @change="toggle(opt.value)" />
+          <span x-text="opt.label" style="flex:1"></span>
+        </label>
+      </template>
+    </div>
+  </div>
+  <input type="hidden" name="{{ spec.key }}"
+         data-json-type="json"
+         :value="JSON.stringify(selected)" />
+</div>
+{{ field_close(spec) }}

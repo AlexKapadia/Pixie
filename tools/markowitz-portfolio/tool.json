@@ -1,0 +1,85 @@
+{
+  "id": "markowitz-portfolio",
+  "name": "Markowitz Portfolio",
+  "description": "Mean-variance efficient frontier and tangency portfolio from a returns matrix.",
+  "version": "0.1.0",
+  "category": "finance/quant",
+  "icon": "scatter-chart",
+  "layout": "form",
+  "warm_keep_seconds": 300,
+  "max_memory_mb": 512,
+  "max_runtime_seconds": 60,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "returns_csv",
+      "type": "file",
+      "label": "Historical returns (CSV)",
+      "description": "CSV with one column per asset, header row of asset names, rows are periodic returns (e.g. daily or monthly).",
+      "accept": ".csv"
+    },
+    {
+      "key": "risk_free_rate",
+      "type": "slider",
+      "label": "Risk-free rate (annual, %)",
+      "default": 4.0,
+      "min": 0.0,
+      "max": 10.0,
+      "step": 0.1
+    },
+    {
+      "key": "periods_per_year",
+      "type": "select",
+      "label": "Sampling frequency",
+      "default": 252,
+      "options": [
+        {"value": 252, "label": "Daily"},
+        {"value": 52, "label": "Weekly"},
+        {"value": 12, "label": "Monthly"}
+      ]
+    },
+    {
+      "key": "target_return",
+      "type": "slider",
+      "label": "Target annual return (%)",
+      "description": "Used for the minimum-variance portfolio at this return level. Set 0 to skip.",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 50.0,
+      "step": 0.5
+    }
+  ],
+  "outputs": [
+    {
+      "key": "efficient_frontier",
+      "type": "chart_scatter",
+      "label": "Efficient frontier"
+    },
+    {
+      "key": "tangency_weights",
+      "type": "kv",
+      "label": "Tangency portfolio weights"
+    },
+    {
+      "key": "target_weights",
+      "type": "kv",
+      "label": "Weights at target return"
+    },
+    {
+      "key": "summary",
+      "type": "kv",
+      "label": "Summary statistics"
+    },
+    {
+      "key": "weights_table",
+      "type": "table",
+      "label": "Weights side by side",
+      "columns": [
+        {"key": "asset", "label": "Asset", "type": "string"},
+        {"key": "min_var", "label": "Min variance", "type": "number"},
+        {"key": "tangency", "label": "Tangency", "type": "number"},
+        {"key": "target", "label": "At target", "type": "number"}
+      ]
+    }
+  ]
+}

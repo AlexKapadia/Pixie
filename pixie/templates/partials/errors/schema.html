@@ -1,0 +1,42 @@
+{#-
+  schema.html — "Schema drift detected."
+
+  Caller context:
+    tool_id    — required
+    tool_label — optional
+    diff_text  — text-form diff of declared vs live schema (optional)
+-#}
+{%- from 'partials/error.html' import error_block -%}
+{{ error_block(
+     kind='schema',
+     severity='warn',
+     tool_id=tool_id,
+     tool_label=tool_label,
+     headline='Schema drift detected.',
+     message=(
+       "The declared tool.json schema does not match what the running "
+       "code returned from /schema. Pixie will not render an out-of-sync form."
+     ),
+     details=diff_text,
+     primary_action={
+       'label': 'Re-validate',
+       'method': 'post',
+       'icon': 'refresh',
+       'url': '/api/tools/' ~ tool_id ~ '/validate',
+     },
+     secondary_actions=[
+       {
+         'label': 'Open tool folder',
+         'kind': 'link',
+         'icon': 'folder',
+         'url': '/api/tools/' ~ tool_id ~ '/reveal',
+       },
+       {
+         'label': 'Hand off to debug-tool',
+         'kind': 'copy-prompt',
+         'icon': 'wand',
+         'prompt': 'In Claude Code, run: debug the ' ~ tool_id ~ ' tool — its declared schema and live schema disagree.',
+       },
+     ],
+     hint='Fix is usually a one-line edit to tool.json or the matching @app.get("/schema") response.'
+) }}

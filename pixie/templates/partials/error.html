@@ -1,0 +1,123 @@
+{#-
+  ErrorBlock — the one shared shell for every Pixie error UI.
+
+  Every shape in `partials/errors/<kind>.html` wraps a call to error_block().
+  Severity ('error' | 'warn') drives the border + soft background; the kind
+  string ('spawn' | 'venv' | 'schema' | 'run' | 'timeout' | 'validation')
+  drives the icon and the data-attribute hook for tests.
+
+  Per AMBITION: every error has at least one primary action. No dead ends.
+
+  Usage:
+    {{ error_block(
+         kind='spawn',
+         severity='error',
+         tool_id='example-compound-interest',
+         headline='Tool failed to start.',
+         message='The tool process did not survive healthz polling.',
+         details=stderr_text,
+         primary_action={
+           'label': 'Re-validate',
+           'method': 'post',
+           'url': '/api/tools/example-compound-interest/validate',
+         },
+         secondary_actions=[
+           {'label': 'Hand off to debug-tool', 'kind': 'copy-prompt',
+            'prompt': 'In Claude Code, run: debug the example-compound-interest tool.'},
+         ],
+         hint='Run the validator first; it surfaces the exact failure mode.'
+    ) }}
+-#}
+{%- from 'partials/icons.html' import icon -%}
+
+{%- macro _action_button(action, tool_id) -%}
+  {%- set classes = ['btn', 'btn--sm'] -%}
+  {%- if action.primary -%}{%- set _ = classes.append('btn--primary') -%}{%- endif -%}
+  {%- if action.kind == 'copy-prompt' -%}
+    <button type="button"
+            class="{{ classes | join(' ') }}"
+            data-pixie-copy="{{ action.prompt | e }}"
+            data-pixie-copy-toast="Prompt copied. Paste into Claude Code.">
+      {{ icon(action.icon or 'copy', 11) }} {{ action.label }}
+    </button>
+  {%- elif action.kind == 'copy' -%}
+    <button type="button"
+            class="{{ classes | join(' ') }}"
+            data-pixie-copy="{{ action.text | e }}"
+            data-pixie-copy-toast="{{ action.toast or 'Copied.' }}">
+      {{ icon(action.icon or 'copy', 11) }} {{ action.label }}
+    </button>
+  {%- elif action.kind == 'link' -%}
+    <a class="{{ classes | join(' ') }}" href="{{ action.url }}"
+       {% if action.target %}target="{{ action.target }}" rel="noopener noreferrer"{% endif %}>
+      {{ icon(action.icon or 'chevron-right', 11) }} {{ action.label }}
+    </a>
+  {%- elif action.method == 'post' -%}
+    <button type="button"
+            class="{{ classes | join(' ') }}"
+            hx-post="{{ action.url }}"
+            hx-target="{{ action.target or '#pixie-main-content' }}"
+            hx-swap="{{ action.swap or 'innerHTML' }}">
+      {{ icon(action.icon or 'refresh', 11) }} {{ action.label }}
+    </button>
+  {%- else -%}
+    <button type="button"
+            class="{{ classes | join(' ') }}"
+            hx-get="{{ action.url }}"
+            hx-target="{{ action.target or '#pixie-main-content' }}"
+            hx-swap="{{ action.swap or 'innerHTML' }}">
+      {{ icon(action.icon or 'chevron-right', 11) }} {{ action.label }}
+    </button>
+  {%- endif -%}
+{%- endmacro -%}
+
+{%- macro error_block(kind='run', severity=None, tool_id='',
+                      headline='Something went wrong.',
+                      message='',
+                      details=None,
+                      primary_action=None,
+                      secondary_actions=None,
+                      tool_label=None,
+                      hint=None,
+                      body_html=None) -%}
+  {%- set sev = severity or ('error' if kind in ('spawn', 'run') else 'warn') -%}
+  {%- set icon_name = 'err' if sev == 'error' else 'warn' -%}
+<div class="pixie-error pixie-error--{{ sev }}"
+     role="alert"
+     data-error-kind="{{ kind }}"
+     data-tool-id="{{ tool_id }}">
+  <header class="pixie-error__head">
+    <span class="pixie-error__icon" aria-hidden="true">{{ icon(icon_name, 12) }}</span>
+    <div class="pixie-error__head-text">
+      <div class="pixie-error__title-row">
+        <span class="t-h6">{{ headline }}</span>
+        {% if tool_label or tool_id %}<span class="badge badge--muted mono">{{ tool_label or tool_id }}</span>{% endif %}
+      </div>
+      {% if message %}<p class="t-body pixie-error__summary">{{ message }}</p>{% endif %}
+    </div>
+  </header>
+  {% if body_html %}
+    <div class="pixie-error__body">{{ body_html | safe }}</div>
+  {% elif details %}
+    <details class="pixie-error__details">
+      <summary class="t-meta">Show details</summary>
+      <pre class="pixie-error__pre mono">{{ details }}</pre>
+    </details>
+  {% endif %}
+  <div class="pixie-error__actions">
+    <div class="pixie-error__actions-row">
+      {% if primary_action %}
+        {%- set _pa = dict(primary_action) -%}
+        {%- if _pa.update({'primary': true}) is none -%}{%- endif -%}
+        {{ _action_button(_pa, tool_id) }}
+      {% endif %}
+      {% if secondary_actions %}
+        {% for action in secondary_actions %}
+          {{ _action_button(action, tool_id) }}
+        {% endfor %}
+      {% endif %}
+    </div>
+    {% if hint %}<div class="t-meta pixie-error__hint">{{ hint }}</div>{% endif %}
+  </div>
+</div>
+{%- endmacro -%}

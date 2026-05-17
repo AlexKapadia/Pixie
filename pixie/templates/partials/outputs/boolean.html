@@ -1,0 +1,26 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
+{% call output_card(spec, panel_id, 'boolean') %}
+  <div class="output-card__body">
+    {% if has_value %}
+      {% set bv = value.value if value is mapping and 'value' in value else value %}
+      {% set is_true = bv in [true, 1, '1', 'true', 'True', 'yes'] %}
+      <span class="output-boolean__pill" data-value="{{ 'true' if is_true else 'false' }}">
+        {% if is_true %}
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          {{ spec.true_label or 'True' }}
+        {% else %}
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          {{ spec.false_label or 'False' }}
+        {% endif %}
+      </span>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

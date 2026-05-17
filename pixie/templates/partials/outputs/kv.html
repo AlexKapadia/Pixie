@@ -1,0 +1,28 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, copy_button -%}
+{% set actions %}{% if has_value %}{{ copy_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'kv', actions=actions) %}
+  <div class="output-card__body" style="padding: 0;">
+    {% if has_value %}
+      {% set pairs = value.pairs if value is mapping and 'pairs' in value else value %}
+      <div class="output-kv" data-copy-target>
+        {% if pairs is mapping %}
+          {% for k, v in pairs.items() %}
+            <div class="output-kv__row">
+              <div class="output-kv__k">{{ k }}</div>
+              <div class="output-kv__v">{{ v }}</div>
+            </div>
+          {% endfor %}
+        {% elif pairs is iterable %}
+          {% for pair in pairs %}
+            <div class="output-kv__row">
+              <div class="output-kv__k">{{ pair.key if pair.key is defined else pair[0] }}</div>
+              <div class="output-kv__v">{{ pair.value if pair.value is defined else pair[1] }}</div>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="output-card__body">{{ empty_state() }}</div>
+    {% endif %}
+  </div>
+{% endcall %}

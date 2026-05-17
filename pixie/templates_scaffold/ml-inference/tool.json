@@ -1,0 +1,39 @@
+{
+  "id": "{{TOOL_ID}}",
+  "name": "{{TOOL_NAME}}",
+  "description": "{{DESCRIPTION}}",
+  "version": "0.1.0",
+  "category": "ml",
+  "icon": "brain",
+  "layout": "form",
+  "warm_keep_seconds": 1800,
+  "max_memory_mb": 4096,
+  "max_runtime_seconds": 120,
+  "requires_data_persistence": true,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "image",
+      "type": "image",
+      "label": "Input image",
+      "description": "Image to classify."
+    },
+    {
+      "key": "top_k",
+      "type": "slider",
+      "label": "Top-K predictions",
+      "description": "How many predictions to return.",
+      "default": 5,
+      "min": 1,
+      "max": 10,
+      "step": 1
+    }
+  ],
+  "outputs": [
+    {
+      "key": "predictions",
+      "type": "kv",
+      "label": "Top predictions"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "max-flow on the same graph",
+  "source": "same 5-node graph treated as a capacitated network from a to d",
+  "inputs": {
+    "edges": "a-b:1\nb-c:2\na-c:5\nc-d:1\nb-d:4",
+    "algorithm": "max_flow",
+    "source": "a",
+    "sink": "d"
+  },
+  "expected_outputs": {},
+  "tolerance": {},
+  "tags": ["graph", "max_flow"]
+}

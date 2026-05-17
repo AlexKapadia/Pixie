@@ -1,0 +1,39 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control autocomplete"
+     x-data='Pixie.autocomplete({ endpoint: {{ spec.endpoint | tojson }}, key: {{ spec.key | tojson }} })'
+     @click.outside="open = false"
+     @keydown.escape.window="open = false">
+  <input type="text"
+         class="input"
+         id="{{ field_id }}"
+         name="{{ spec.key }}"
+         autocomplete="off"
+         x-model="query"
+         @input.debounce.200ms="fetch()"
+         @focus="open = true"
+         @keydown.arrow-down.prevent="next()"
+         @keydown.arrow-up.prevent="prev()"
+         @keydown.enter.prevent="commit()"
+         :aria-expanded="open"
+         aria-haspopup="listbox"
+         {% if spec.required %}required aria-required="true"{% endif %}
+         {% if value is not none %}value="{{ value }}"{% endif %} />
+  <div class="autocomplete__pop popover"
+       x-show="open && (loading || results.length || (query && !loading))"
+       x-cloak>
+    <template x-if="loading">
+      <div class="popover__empty">Searching…</div>
+    </template>
+    <template x-for="(r, i) in results" :key="i">
+      <button type="button" class="popover__item"
+              :class="i === cursor && 'is-active'"
+              @mouseenter="cursor = i"
+              @mousedown.prevent="pick(r)">
+        <span x-text="r.label || r.value || r"></span>
+      </button>
+    </template>
+    <div class="popover__empty" x-show="!loading && results.length === 0 && query">No matches</div>
+  </div>
+</div>
+{{ field_close(spec) }}

@@ -1,0 +1,49 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, expand_button -%}
+{% set actions %}{% if has_value %}{{ expand_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'chart_candlestick', actions=actions) %}
+  <div class="output-card__body">
+    {% if has_value %}
+      <div id="chart-{{ panel_id }}" class="output-chart"
+           role="img" aria-label="{{ spec.label }} candlestick"></div>
+      <script type="application/json" id="data-{{ panel_id }}">{{ value | tojson_safe | safe }}</script>
+      <script>
+        (function () {
+          var el = document.getElementById('chart-{{ panel_id }}');
+          var out = JSON.parse(document.getElementById('data-{{ panel_id }}').textContent);
+          var pts = out.points || [];
+          function buildData() {
+            var cs = getComputedStyle(document.documentElement);
+            var running = cs.getPropertyValue('--running').trim() || '#3aa169';
+            var error   = cs.getPropertyValue('--error').trim()   || '#d33d2a';
+            return [{
+              type: 'candlestick',
+              x:    pts.map(function (p) { return p.t; }),
+              open: pts.map(function (p) { return p.open; }),
+              high: pts.map(function (p) { return p.high; }),
+              low:  pts.map(function (p) { return p.low; }),
+              close:pts.map(function (p) { return p.close; }),
+              increasing: { line: { color: running }, fillcolor: running },
+              decreasing: { line: { color: error },   fillcolor: error }
+            }];
+          }
+          window.Pixie && Pixie.makeChart(el, buildData(), {
+            xaxis: { rangeslider: { visible: false } },
+            showlegend: false
+          });
+          document.addEventListener('pixie:theme-changed', function () {
+            if (typeof Plotly === 'undefined') return;
+            try {
+              var layout = Object.assign({}, Pixie.plotlyTheme(), {
+                xaxis: { rangeslider: { visible: false } },
+                showlegend: false
+              });
+              Plotly.react(el, buildData(), layout, Pixie.plotlyConfig);
+            } catch (e) {}
+          });
+        })();
+      </script>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

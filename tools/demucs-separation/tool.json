@@ -1,0 +1,54 @@
+{
+  "id": "demucs-separation",
+  "name": "Demucs Source Separation",
+  "description": "Split a mix into vocals, drums, bass, and other stems. Uses Demucs htdemucs/mdx when available; otherwise falls back to a centre-channel / sideband approximation so the contract still works.",
+  "version": "0.1.0",
+  "category": "audio/separation",
+  "icon": "scissors",
+  "layout": "form",
+  "warm_keep_seconds": 600,
+  "max_memory_mb": 4096,
+  "max_runtime_seconds": 600,
+  "concurrent": false,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "audio_input",
+      "type": "file",
+      "label": "Audio file",
+      "accept": ".wav,.mp3,.flac,.ogg,.m4a"
+    },
+    {
+      "key": "model",
+      "type": "select",
+      "label": "Model",
+      "default": "htdemucs",
+      "options": [
+        {"value": "htdemucs", "label": "Demucs (htdemucs)"},
+        {"value": "mdx", "label": "MDX-net"}
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "key": "vocals",
+      "type": "audio",
+      "label": "Vocals"
+    },
+    {
+      "key": "drums",
+      "type": "audio",
+      "label": "Drums"
+    },
+    {
+      "key": "bass",
+      "type": "audio",
+      "label": "Bass"
+    },
+    {
+      "key": "other",
+      "type": "audio",
+      "label": "Other"
+    }
+  ]
+}

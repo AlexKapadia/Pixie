@@ -1,0 +1,16 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, expand_button -%}
+{% set actions %}{% if has_value %}{{ expand_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'image', actions=actions) %}
+  <div class="output-card__body">
+    {% if has_value %}
+      {% set src = value.url if value is mapping and 'url' in value
+                   else value.data if value is mapping and 'data' in value
+                   else value %}
+      {% set alt = value.alt if value is mapping and 'alt' in value else spec.label %}
+      <img class="output-image" src="{{ src }}" alt="{{ alt }}"
+           data-pixie-expand="self">
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

@@ -1,0 +1,21 @@
+{# Bulk action bar -- visible only when something is selected. #}
+<div class="library__bulk-inner">
+  <span class="library__bulk-count">
+    <span class="library__bulk-badge mono" x-text="selectedIds.length"></span>
+    selected
+  </span>
+  <span class="library__bulk-sep" aria-hidden="true"></span>
+  <div class="library__bulk-actions">
+    <button type="button" class="btn btn--sm" @click="bulk('star')">Star</button>
+    <button type="button" class="btn btn--sm" @click="bulk('unstar')">Unstar</button>
+    <button type="button" class="btn btn--sm"
+            @click="(() => { const lbl = prompt('Label for selected artefacts?'); if (lbl) bulk('label', lbl); })()">
+      Label…
+    </button>
+    <button type="button" class="btn btn--sm btn--danger"
+            @click="(() => { if (confirm(`Move ${selectedIds.length} artefact(s) to trash?`)) bulk('delete'); })()">
+      Delete
+    </button>
+  </div>
+  <button type="button" class="btn btn--ghost btn--sm" @click="clearSelection()">Clear</button>
+</div>

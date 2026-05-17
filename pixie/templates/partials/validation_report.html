@@ -1,0 +1,75 @@
+{#-
+  validation_report.html
+
+  Renders the body of a ValidationReport (the 11 checks plus optional
+  sample_inputs / sample_output / spawn_log). Used by:
+    * partials/errors/validation.html — inside the ErrorBlock body slot
+    * the per-tool settings page Re-validate result panel
+    * the standalone /tool/<id>/validate route response
+
+  Two ways to use:
+    {% from 'partials/validation_report.html' import validation_report %}
+    {{ validation_report(report, tool_id) }}    — full standalone panel
+
+    {{ validation_report_body(report) }}        — inner body only (for ErrorBlock)
+-#}
+{%- from 'partials/icons.html' import icon -%}
+
+{%- macro _status_pill(status) -%}
+  <span class="pill pill--{{ status }}">{{ status }}</span>
+{%- endmacro -%}
+
+{%- macro validation_report_body(report) -%}
+<ul class="pixie-checklist" role="list">
+  {% for check in report.checks %}
+    {%- set is_fail = check.status in ('fail', 'warn') -%}
+    <li class="pixie-checklist__row" data-status="{{ check.status }}">
+      <span class="pixie-checklist__pill">{{ _status_pill(check.status) }}</span>
+      <div class="pixie-checklist__main">
+        <div class="pixie-checklist__name">{{ check.name }}</div>
+        {% if check.message %}<div class="t-meta">{{ check.message }}</div>{% endif %}
+        {% if check.details %}
+          <details class="pixie-checklist__details" {% if is_fail %}open{% endif %}>
+            <summary class="t-meta">Details</summary>
+            <pre class="pixie-error__pre mono">{{ check.details }}</pre>
+          </details>
+        {% endif %}
+      </div>
+    </li>
+  {% endfor %}
+</ul>
+{% if report.sample_inputs %}
+<details class="pixie-checklist__aux">
+  <summary class="t-meta">Sample inputs sent during validation</summary>
+  <pre class="pixie-error__pre mono">{{ report.sample_inputs | tojson(indent=2) }}</pre>
+</details>
+{% endif %}
+{% if report.sample_output %}
+<details class="pixie-checklist__aux">
+  <summary class="t-meta">Sample output received</summary>
+  <pre class="pixie-error__pre mono">{{ report.sample_output | tojson(indent=2) }}</pre>
+</details>
+{% endif %}
+{% if report.spawn_log %}
+<details class="pixie-checklist__aux">
+  <summary class="t-meta">Spawn log</summary>
+  <pre class="pixie-error__pre mono">{{ report.spawn_log }}</pre>
+</details>
+{% endif %}
+{%- endmacro -%}
+
+{%- macro validation_report(report, tool_id='') -%}
+<section class="pixie-validation" data-overall="{{ report.overall }}">
+  <header class="pixie-validation__head">
+    <div class="pixie-validation__head-text">
+      {% if tool_id %}<span class="t-eyebrow">{{ tool_id }}</span>{% endif %}
+      <h3 class="t-h5" style="margin: 2px 0 0;">Validation report</h3>
+      {% if report.timestamp %}<div class="t-meta mono">{{ report.timestamp }}</div>{% endif %}
+    </div>
+    <div class="pixie-validation__head-pill">{{ _status_pill(report.overall) }}</div>
+  </header>
+  <div class="pixie-validation__body">
+    {{ validation_report_body(report) }}
+  </div>
+</section>
+{%- endmacro -%}

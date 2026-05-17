@@ -1,0 +1,46 @@
+{
+  "id": "llm-tool-use-agent",
+  "name": "LLM Tool-Use Agent",
+  "description": "A chat agent that can call a calculator and/or a sandboxed web-search tool. Reasoning streams as text; each tool call is appended to a structured log. Falls back to a deterministic local agent if no Anthropic key is configured.",
+  "version": "0.1.0",
+  "category": "agent",
+  "icon": "bot",
+  "layout": "chat",
+  "warm_keep_seconds": 600,
+  "max_memory_mb": 1024,
+  "max_runtime_seconds": 120,
+  "secrets": [
+    {"key": "ANTHROPIC_API_KEY", "description": "Anthropic API key (optional; enables Claude routing).", "required": false}
+  ],
+  "inputs": [
+    {
+      "key": "messages",
+      "type": "json",
+      "label": "Conversation",
+      "description": "Full list of {role, content} entries."
+    },
+    {
+      "key": "tools",
+      "type": "multiselect",
+      "label": "Available tools",
+      "default": ["calculator"],
+      "options": [
+        {"value": "calculator", "label": "Calculator"},
+        {"value": "web_search", "label": "Web search (sandboxed stub)"}
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "key": "reply",
+      "type": "stream_text",
+      "label": "Reasoning + answer",
+      "streaming": true
+    },
+    {
+      "key": "tool_calls",
+      "type": "log",
+      "label": "Tool calls"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "Built-in disc image",
+  "source": "Tool's fallback disc image, Otsu threshold backend.",
+  "inputs": {
+    "model": "u2net",
+    "output_format": "mask"
+  },
+  "expected_outputs": {},
+  "tags": ["demo", "fallback"]
+}

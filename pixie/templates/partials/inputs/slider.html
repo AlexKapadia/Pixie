@@ -1,0 +1,59 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{{ field_open(spec, field_id) }}
+{% if spec.range %}
+<div class="field__control slider slider--dual"
+     x-data='{
+       lo: (Array.isArray({{ initial_json }}) ? {{ initial_json }}[0] : {{ spec.min }}),
+       hi: (Array.isArray({{ initial_json }}) ? {{ initial_json }}[1] : {{ spec.max }}),
+       sync() { values[{{ spec.key | tojson }}] = [Number(this.lo), Number(this.hi)]; }
+     }'
+     x-init="sync()">
+  <div class="slider__track" aria-hidden="true">
+    <div class="slider__fill"
+         :style="`left: ${((Math.min(lo, hi) - {{ spec.min }}) / ({{ spec.max }} - {{ spec.min }})) * 100}%;
+                  right: ${100 - ((Math.max(lo, hi) - {{ spec.min }}) / ({{ spec.max }} - {{ spec.min }})) * 100}%`"></div>
+  </div>
+  <input type="range" class="slider__handle slider__handle--lo"
+         id="{{ field_id }}"
+         min="{{ spec.min }}" max="{{ spec.max }}"
+         {% if spec.step is not none %}step="{{ spec.step }}"{% endif %}
+         x-model.number="lo" @input="sync()"
+         aria-label="{{ spec.label }} (lower bound)" />
+  <input type="range" class="slider__handle slider__handle--hi"
+         min="{{ spec.min }}" max="{{ spec.max }}"
+         {% if spec.step is not none %}step="{{ spec.step }}"{% endif %}
+         x-model.number="hi" @input="sync()"
+         aria-label="{{ spec.label }} (upper bound)" />
+  <input type="hidden" name="{{ spec.key }}"
+         data-json-type="json"
+         :value="JSON.stringify([Number(lo), Number(hi)])" />
+  <div class="slider__readout">
+    <span class="t-meta mono"><span x-text="lo"></span> – <span x-text="hi"></span></span>
+    <span class="t-meta mono">{{ spec.min }}…{{ spec.max }}</span>
+  </div>
+</div>
+{% else %}
+<div class="field__control slider"
+     x-data='{ v: Number({{ initial_json or spec.min }}) }'
+     x-init="values[{{ spec.key | tojson }}] = Number(v)">
+  <div class="slider__track" aria-hidden="true">
+    <div class="slider__fill"
+         :style="`left: 0; right: ${100 - ((v - {{ spec.min }}) / ({{ spec.max }} - {{ spec.min }})) * 100}%`"></div>
+  </div>
+  <input type="range" class="slider__handle"
+         id="{{ field_id }}"
+         name="{{ spec.key }}"
+         data-json-type="number"
+         min="{{ spec.min }}" max="{{ spec.max }}"
+         {% if spec.step is not none %}step="{{ spec.step }}"{% endif %}
+         x-model.number="v"
+         @input="values[{{ spec.key | tojson }}] = Number(v)"
+         {% if spec.required %}required{% endif %}
+         aria-label="{{ spec.label }}" />
+  <div class="slider__readout">
+    <span class="t-meta mono" x-text="v"></span>
+    <span class="t-meta mono">{{ spec.min }}…{{ spec.max }}</span>
+  </div>
+</div>
+{% endif %}
+{{ field_close(spec) }}

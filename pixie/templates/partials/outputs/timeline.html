@@ -1,0 +1,21 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
+{% call output_card(spec, panel_id, 'timeline') %}
+  <div class="output-card__body">
+    {% if has_value %}
+      {% set events = value.events if value is mapping and 'events' in value else value %}
+      <ol class="output-timeline" style="list-style:none; padding-left:22px; margin:0;">
+        {% for ev in events %}
+          <li class="output-timeline__event">
+            <div class="output-timeline__t">{{ ev.t or ev.time or '' }}</div>
+            <div class="output-timeline__title">{{ ev.title or ev.label or '' }}</div>
+            {% if ev.description or ev.desc %}
+              <div class="output-timeline__desc">{{ ev.description or ev.desc }}</div>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

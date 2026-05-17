@@ -1,0 +1,13 @@
+{
+  "name": "rule 30 seed",
+  "source": "deterministic single-cell seed",
+  "inputs": {
+    "rule": "rule30",
+    "width": 120,
+    "generations": 80,
+    "seed": "42"
+  },
+  "expected_outputs": {},
+  "tolerance": {},
+  "tags": ["wolfram"]
+}

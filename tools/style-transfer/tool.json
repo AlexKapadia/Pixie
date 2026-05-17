@@ -1,0 +1,73 @@
+{
+  "id": "style-transfer",
+  "name": "Neural Style Transfer",
+  "description": "Classic Gatys-style neural style transfer with a streaming loss curve.",
+  "version": "0.1.0",
+  "category": "ml/inference",
+  "icon": "palette",
+  "layout": "form",
+  "warm_keep_seconds": 1800,
+  "max_memory_mb": 4096,
+  "max_runtime_seconds": 600,
+  "concurrent": false,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "content_image",
+      "type": "image",
+      "label": "Content image"
+    },
+    {
+      "key": "style_image",
+      "type": "image",
+      "label": "Style image"
+    },
+    {
+      "key": "strength",
+      "type": "slider",
+      "label": "Style strength (%)",
+      "default": 60.0,
+      "min": 0.0,
+      "max": 100.0,
+      "step": 1.0
+    },
+    {
+      "key": "iterations",
+      "type": "number",
+      "label": "Optimisation iterations",
+      "default": 100,
+      "min": 50,
+      "max": 500,
+      "step": 10
+    },
+    {
+      "key": "image_size",
+      "type": "select",
+      "label": "Working image size",
+      "default": 128,
+      "options": [
+        {"value": 96, "label": "96 px (fast)"},
+        {"value": 128, "label": "128 px (default)"},
+        {"value": 192, "label": "192 px (slow)"}
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "key": "styled",
+      "type": "image",
+      "label": "Styled output"
+    },
+    {
+      "key": "loss_curve",
+      "type": "chart_line",
+      "label": "Loss curve",
+      "streaming": true
+    },
+    {
+      "key": "summary",
+      "type": "kv",
+      "label": "Run summary"
+    }
+  ]
+}

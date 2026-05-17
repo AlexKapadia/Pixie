@@ -1,0 +1,16 @@
+[project]
+name = "markowitz-portfolio"
+version = "0.1.0"
+description = "Mean-variance efficient frontier and tangency portfolio."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "python-dotenv>=1.0",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "scipy>=1.13",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]

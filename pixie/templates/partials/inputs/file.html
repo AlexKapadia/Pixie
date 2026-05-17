@@ -1,0 +1,54 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{%- set accept_attr = (spec.accept | join(',')) if (spec.accept is iterable and spec.accept is not string) else spec.accept -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control file-drop"
+     data-pixie-file-drop
+     x-data='Pixie.fileDrop()'
+     :class="{ "is-dragover": dragover, "is-filled": files.length > 0 }"
+     @dragover.prevent="dragover = true"
+     @dragleave.prevent="dragover = false"
+     @drop.prevent="onDrop($event)">
+  <input type="file"
+         class="file-drop__input sr-only"
+         id="{{ field_id }}"
+         name="{{ spec.key }}"
+         {% if accept_attr %}accept="{{ accept_attr }}"{% endif %}
+         {% if spec.multiple %}multiple{% endif %}
+         {% if spec.required %}required aria-required="true"{% endif %}
+         @change="onChange($event)" />
+  <template x-if="files.length === 0">
+    <label for="{{ field_id }}" class="file-drop__empty">
+      <span class="file-drop__icon" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11V3M5 6l3-3 3 3M3 13h10"/></svg>
+      </span>
+      <span class="file-drop__copy">
+        <span class="file-drop__primary">Drop {% if spec.multiple %}files{% else %}a file{% endif %} here or <span class="file-drop__browse">browse</span></span>
+        <span class="file-drop__hint t-meta">{% if accept_attr %}{{ accept_attr }}{% else %}Any file type{% endif %}{% if spec.max_size_mb %} · max {{ spec.max_size_mb }} MB{% endif %}</span>
+      </span>
+    </label>
+  </template>
+  <template x-if="files.length > 0">
+    <div class="file-drop__list">
+      <template x-for="(f, i) in files" :key="i">
+        <div class="file-drop__row">
+          <span class="file-drop__row-icon" aria-hidden="true">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 1.5h6L13 5v9a.5.5 0 0 1-.5.5h-9A.5.5 0 0 1 3 14V2a.5.5 0 0 1 .5-.5Z"/><path d="M9 1.5V5h4"/></svg>
+          </span>
+          <span class="file-drop__row-meta">
+            <span class="file-drop__row-name" x-text="f.name"></span>
+            <span class="file-drop__row-size t-meta mono" x-text="Pixie.fmtBytes(f.size)"></span>
+          </span>
+          <button type="button" class="btn btn--ghost btn--icon btn--sm" @click.prevent="remove(i)" aria-label="Remove">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m4 4 8 8M12 4l-8 8"/></svg>
+          </button>
+        </div>
+      </template>
+      <button type="button" class="btn btn--ghost btn--sm file-drop__add"
+              @click.prevent="document.getElementById({{ field_id | tojson }}).click()">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+        Add {% if spec.multiple %}more{% else %}another{% endif %}
+      </button>
+    </div>
+  </template>
+</div>
+{{ field_close(spec) }}

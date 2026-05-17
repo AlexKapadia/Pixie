@@ -1,0 +1,15 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, expand_button -%}
+{% set actions %}{% if has_value %}{{ expand_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'chart_network', actions=actions) %}
+  <div class="output-card__body">
+    {% if has_value %}
+      <div class="output-network">
+        <div id="chart-{{ panel_id }}" class="output-chart output-network__plot"
+             role="img" aria-label="{{ spec.label }} network graph"></div>
+        <script type="application/json">{{ value | tojson_safe | safe }}</script>
+      </div>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

@@ -1,0 +1,34 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, expand_button -%}
+{% set actions %}{% if has_value %}{{ expand_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'map_polygons', actions=actions) %}
+  <div class="output-card__body">
+    {% if has_value %}
+      <div id="map-{{ panel_id }}" class="output-map"
+           role="application" aria-label="{{ spec.label }} polygons"></div>
+      <script type="application/json" id="data-{{ panel_id }}">{{ value | tojson_safe | safe }}</script>
+      <script>
+        (function () {
+          var el = document.getElementById('map-{{ panel_id }}');
+          var out = JSON.parse(document.getElementById('data-{{ panel_id }}').textContent);
+          var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#5b6cd1';
+          window.Pixie && Pixie.makeMap && (function init() {
+            var map = Pixie.makeMap(el, { center: out.center || [51.5, -0.1], zoom: out.zoom || 5 });
+            if (!map) return;
+            var bounds = [];
+            (out.polygons || []).forEach(function (poly) {
+              var p = L.polygon(poly.coords, {
+                color: poly.colour || accent, weight: 2,
+                fillColor: poly.colour || accent, fillOpacity: 0.25
+              }).addTo(map);
+              if (poly.label) p.bindPopup(poly.label);
+              (poly.coords || []).forEach(function (c) { bounds.push(c); });
+            });
+            if (bounds.length) { try { map.fitBounds(bounds, { padding: [20, 20] }); } catch (e) {} }
+          })();
+        })();
+      </script>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

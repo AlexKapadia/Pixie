@@ -1,0 +1,38 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
+{% call output_card(spec, panel_id, 'file') %}
+  <div class="output-card__body">
+    {% if has_value %}
+      {% set filename = value.filename if value is mapping and 'filename' in value else 'download' %}
+      {% set url = value.url if value is mapping and 'url' in value
+                   else value.data if value is mapping and 'data' in value
+                   else value %}
+      {% set mime = value.mime if value is mapping and 'mime' in value else '' %}
+      {% set size = value.size if value is mapping and 'size' in value else none %}
+      <div class="output-file">
+        <div class="output-file__icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+        </div>
+        <div class="output-file__meta">
+          <div class="output-file__name">{{ filename }}</div>
+          <div class="output-file__sub">
+            {% if mime %}{{ mime }}{% endif %}
+            {% if size %}{% if mime %} · {% endif %}{{ '%.1f' % (size / 1024) }} KB{% endif %}
+          </div>
+        </div>
+        <a class="btn btn--sm" href="{{ url }}" download="{{ filename }}">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path>
+          </svg>
+          Download
+        </a>
+      </div>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

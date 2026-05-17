@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{%- from 'partials/icons.html' import icon -%}
+{% block title %}Settings — Pixie{% endblock %}
+
+{% block header %}
+  <header class="header">
+    <div class="header__main">
+      <div class="header__title-row">
+        <span class="icon-slot">{{ icon('settings', 14) }}</span>
+        <h1 class="t-h5">Settings</h1>
+        <span class="badge">Local · this machine only</span>
+      </div>
+      <div class="header__meta">
+        <span>Everything below persists in <span class="mono">pixie.db</span> and applies immediately.</span>
+      </div>
+    </div>
+  </header>
+{% endblock %}
+
+{% block body %}
+  <div id="settings-body" class="settings-shell">
+    {% include "partials/settings_global_body.html" %}
+  </div>
+{% endblock %}

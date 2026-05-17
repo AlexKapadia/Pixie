@@ -1,0 +1,45 @@
+{%- from 'partials/icons.html' import icon -%}
+{#-
+  Polled fragment showing background re-validation progress. While
+  running, it polls itself every second via hx-trigger on the wrapper.
+-#}
+{% if status %}
+  {% set pct = 0 %}
+  {% if status.total > 0 %}
+    {% set pct = ((status.done / status.total) * 100) | round(0, 'floor') | int %}
+  {% endif %}
+  <div class="revalidate-status__inner {% if status.finished %}is-done{% endif %}"
+       {% if not status.finished %}
+       hx-get="/settings/revalidate-status"
+       hx-trigger="every 1s"
+       hx-target="#revalidate-status"
+       hx-swap="innerHTML"
+       {% endif %}>
+    <div class="revalidate-status__head">
+      {% if status.finished %}
+        <span class="badge badge--info">{{ icon('check', 10) }} complete</span>
+      {% else %}
+        <span class="badge badge--running">{{ icon('bolt', 10) }} running</span>
+      {% endif %}
+      <span class="t-meta">
+        {{ status.done }} / {{ status.total }}
+        {% if status.current %} · {{ status.current }}{% endif %}
+      </span>
+    </div>
+    <div class="revalidate-status__bar"
+         role="progressbar"
+         aria-valuemin="0" aria-valuemax="100"
+         aria-valuenow="{{ pct }}">
+      <div class="revalidate-status__fill" style="width: {{ pct }}%;"></div>
+    </div>
+    {% if status.finished %}
+      <div class="revalidate-status__summary">
+        {% for label, count in status.summary.items() %}
+          <span class="badge badge--{{ label }}">{{ count }} {{ label }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+{% else %}
+  <span class="t-meta">No validation run in progress. Click <strong>Re-validate all</strong> to start.</span>
+{% endif %}

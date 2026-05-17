@@ -1,0 +1,18 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
+{% call output_card(spec, panel_id, 'number') %}
+  <div class="output-card__body">
+    {% if has_value %}
+      {% set num_value = value.value if value is mapping and 'value' in value else value %}
+      <div class="stat output-stat"
+           data-stat-value="{{ num_value }}"
+           data-stat-format="{{ spec.format or 'decimal' }}"
+           data-stat-precision="{{ spec.precision if spec.precision is not none else '' }}"
+           data-stat-unit="{{ spec.unit or '' }}">
+        <div class="stat__value num mono" data-copy-target>{{ num_value }}</div>
+        {% if spec.unit %}<div class="stat__unit">{{ spec.unit }}</div>{% endif %}
+      </div>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

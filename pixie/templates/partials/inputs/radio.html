@@ -1,0 +1,34 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{{ field_open(spec, field_id) }}
+{% if spec.options|length <= 4 %}
+<div class="field__control segmented" role="radiogroup" aria-labelledby="{{ field_id }}-label">
+  {% for opt in spec.options %}
+  <label class="segmented__option"
+         :class="values[{{ spec.key | tojson }}] === {{ opt.value | tojson }} && 'is-active'">
+    <input type="radio"
+           class="sr-only"
+           name="{{ spec.key }}"
+           value="{{ opt.value }}"
+           x-model="values[{{ spec.key | tojson }}]"
+           {% if value == opt.value %}checked{% endif %} />
+    <span>{{ opt.label }}</span>
+  </label>
+  {% endfor %}
+</div>
+{% else %}
+<div class="field__control radio-group" role="radiogroup" aria-labelledby="{{ field_id }}-label">
+  {% for opt in spec.options %}
+  <label class="radio">
+    <input type="radio"
+           class="radio__input"
+           name="{{ spec.key }}"
+           value="{{ opt.value }}"
+           x-model="values[{{ spec.key | tojson }}]"
+           {% if value == opt.value %}checked{% endif %} />
+    <span class="radio__visual" aria-hidden="true"><span class="radio__dot"></span></span>
+    <span class="radio__text">{{ opt.label }}</span>
+  </label>
+  {% endfor %}
+</div>
+{% endif %}
+{{ field_close(spec) }}

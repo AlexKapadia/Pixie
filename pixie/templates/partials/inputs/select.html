@@ -1,0 +1,72 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{%- set options_json = spec.options | dump_options | tojson -%}
+{{ field_open(spec, field_id) }}
+{% if spec.searchable or spec.options|length > 8 %}
+<div class="field__control select select--searchable"
+     x-data='{
+       open: false,
+       q: "",
+       opts: {{ options_json }},
+       get filtered() {
+         const q = this.q.trim().toLowerCase();
+         if (!q) return this.opts;
+         return this.opts.filter(o => (o.label + " " + String(o.value)).toLowerCase().includes(q));
+       },
+       pick(opt) { values[{{ spec.key | tojson }}] = opt.value; this.open = false; this.q = ""; },
+       label() {
+         const v = values[{{ spec.key | tojson }}];
+         const m = this.opts.find(o => o.value === v);
+         return m ? m.label : "";
+       }
+     }'
+     @click.outside="open = false"
+     @keydown.escape.window="open = false">
+  <div class="select__display input"
+       id="{{ field_id }}"
+       role="combobox"
+       tabindex="0"
+       :aria-expanded="open"
+       aria-haspopup="listbox"
+       :class="open && 'is-open'"
+       @click="open = !open"
+       @keydown.enter.prevent="open = !open"
+       @keydown.space.prevent="open = !open">
+    <span class="select__value" x-text="label() || 'Select…'" :class="!label() && 'is-placeholder'"></span>
+    <svg class="select__chev" width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="m3 6 5 5 5-5"/></svg>
+  </div>
+  <div class="select__pop popover" x-show="open" x-cloak x-transition.opacity.duration.120ms>
+    <div class="select__search">
+      <input type="search" class="input" placeholder="Filter…" x-model="q" />
+    </div>
+    <div class="select__list" role="listbox">
+      <template x-for="opt in filtered" :key="String(opt.value)">
+        <button type="button" class="popover__item"
+                role="option"
+                :aria-selected="values[{{ spec.key | tojson }}] === opt.value"
+                @click="pick(opt)">
+          <span x-text="opt.label" style="flex:1"></span>
+        </button>
+      </template>
+      <div class="popover__empty" x-show="filtered.length === 0">No matches</div>
+    </div>
+  </div>
+  <input type="hidden" name="{{ spec.key }}"
+         :value="values[{{ spec.key | tojson }}]"
+         {% if value is not none %}value="{{ value }}"{% endif %} />
+</div>
+{% else %}
+<div class="field__control select__wrap">
+  <select class="select"
+          id="{{ field_id }}"
+          name="{{ spec.key }}"
+          x-model="values[{{ spec.key | tojson }}]"
+          {% if spec.required %}required aria-required="true"{% endif %}>
+    {% if not spec.required %}<option value="">Select…</option>{% endif %}
+    {% for opt in spec.options %}
+    <option value="{{ opt.value }}" {% if value == opt.value %}selected{% endif %}>{{ opt.label }}</option>
+    {% endfor %}
+  </select>
+  <svg class="select__chev" width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="m3 6 5 5 5-5"/></svg>
+</div>
+{% endif %}
+{{ field_close(spec) }}

@@ -1,0 +1,12 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control">
+  <input type="datetime-local"
+         class="input mono"
+         id="{{ field_id }}"
+         name="{{ spec.key }}"
+         x-model="values[{{ spec.key | tojson }}]"
+         {% if spec.required %}required aria-required="true"{% endif %}
+         {% if value is not none %}value="{{ value }}"{% endif %} />
+</div>
+{{ field_close(spec) }}

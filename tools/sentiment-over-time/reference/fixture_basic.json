@@ -1,0 +1,13 @@
+{
+  "name": "synthetic sentiment",
+  "source": "built-in sample frame (30 days x 8 messages/day)",
+  "inputs": {
+    "dataset_csv": null,
+    "date_column": "date",
+    "text_column": "text",
+    "window_days": 7
+  },
+  "expected_outputs": {},
+  "tolerance": {},
+  "tags": ["sentiment"]
+}

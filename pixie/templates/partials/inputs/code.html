@@ -1,0 +1,17 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{%- set lang = spec.language or 'plain' -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control code-editor">
+  <div class="code-editor__strip">
+    <span class="mono code-editor__lang">{{ lang }}</span>
+  </div>
+  <textarea class="textarea mono"
+            id="{{ field_id }}"
+            name="{{ spec.key }}"
+            data-pixie-code
+            data-language="{{ lang }}"
+            rows="10"
+            spellcheck="false"
+            {% if spec.required %}required aria-required="true"{% endif %}>{% if value is not none %}{{ value }}{% endif %}</textarea>
+</div>
+{{ field_close(spec) }}

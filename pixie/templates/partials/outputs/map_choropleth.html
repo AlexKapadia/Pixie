@@ -1,0 +1,68 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, expand_button -%}
+{% set actions %}{% if has_value %}{{ expand_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'map_choropleth', actions=actions) %}
+  <div class="output-card__body">
+    {% if has_value %}
+      <div id="map-{{ panel_id }}" class="output-map"
+           role="application" aria-label="{{ spec.label }} choropleth"></div>
+      <div class="output-map-legend" style="margin-top:6px;">
+        <span class="t-meta mono">low</span>
+        <span style="display:inline-block; width:80px; height:8px; margin: 0 6px;
+                     background: linear-gradient(to right,
+                       color-mix(in oklch, var(--accent) 15%, var(--bg)),
+                       var(--accent));"></span>
+        <span class="t-meta mono">high</span>
+      </div>
+      <script type="application/json" id="data-{{ panel_id }}">{{ value | tojson_safe | safe }}</script>
+      <script>
+        (function () {
+          var el = document.getElementById('map-{{ panel_id }}');
+          var out = JSON.parse(document.getElementById('data-{{ panel_id }}').textContent);
+          var values = out.values || {};
+          var vMin = out.min, vMax = out.max;
+          if (vMin === undefined || vMax === undefined) {
+            var nums = Object.values(values).filter(function (v) { return typeof v === 'number'; });
+            vMin = Math.min.apply(null, nums); vMax = Math.max.apply(null, nums);
+          }
+          var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#5b6cd1';
+          function colour(v) {
+            if (v == null || isNaN(v)) return 'rgba(120,120,128,0.2)';
+            var t = vMax === vMin ? 0.5 : (v - vMin) / (vMax - vMin);
+            return 'color-mix(in oklch, ' + accent + ' ' + Math.round(15 + t * 75) + '%, var(--bg))';
+          }
+          window.Pixie && Pixie.makeMap && (function init() {
+            var map = Pixie.makeMap(el, { center: out.center || [51.5, -0.1], zoom: out.zoom || 5 });
+            if (!map || !out.geojson) return;
+            function strokeColour() {
+              return getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#ffffff';
+            }
+            function styleFeature(feature) {
+              var v = values[feature.id != null ? feature.id : (feature.properties && feature.properties.id)];
+              return { fillColor: colour(v), color: strokeColour(), weight: 1, fillOpacity: 0.85 };
+            }
+            var layer = L.geoJSON(out.geojson, {
+              style: styleFeature,
+              onEachFeature: function (feature, lyr) {
+                var id = feature.id != null ? feature.id : (feature.properties && feature.properties.id);
+                var name = (feature.properties && feature.properties.name) || id;
+                var v = values[id];
+                lyr.bindPopup(String(name) + ': ' + (v == null ? '—' : v));
+              }
+            }).addTo(map);
+            try { map.fitBounds(layer.getBounds(), { padding: [16, 16] }); } catch (e) {}
+            document.addEventListener('pixie:theme-changed', function () {
+              try {
+                accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || accent;
+                layer.eachLayer(function (lyr) {
+                  if (lyr.feature) lyr.setStyle(styleFeature(lyr.feature));
+                });
+              } catch (e) {}
+            });
+          })();
+        })();
+      </script>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

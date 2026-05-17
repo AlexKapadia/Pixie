@@ -1,0 +1,17 @@
+[project]
+name = "bertopic-modelling"
+version = "0.1.0"
+description = "BERTopic-based topic model over a CSV of documents."
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
+  "python-dotenv>=1.0",
+  "pandas>=2.2",
+  "numpy>=1.26",
+  "scikit-learn>=1.4",
+  "bertopic>=0.16",
+  "sentence-transformers>=3.0",
+  "umap-learn>=0.5",
+  "hdbscan>=0.8.33",
+]

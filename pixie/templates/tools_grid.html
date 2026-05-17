@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{%- from 'partials/icons.html' import icon -%}
+{% block title %}All tools — Pixie{% endblock %}
+
+{% block header %}
+  <header class="header">
+    <div class="header__main">
+      <div class="header__title-row">
+        <span class="icon-slot">{{ icon('list', 14) }}</span>
+        <h1 class="t-h5">All tools</h1>
+        <span class="badge mono num">{{ grid.total }}</span>
+      </div>
+      <div class="header__meta">
+        <span>Filter, sort, and bulk-manage every tool on disk.</span>
+      </div>
+    </div>
+    <div class="header__actions">
+      <a class="btn btn--ghost btn--sm" href="/" hx-get="/" hx-target="#pixie-main-content" hx-push-url="true">
+        {{ icon('chevron-left', 12) }} Dashboard
+      </a>
+      <a class="btn btn--ghost btn--sm" href="/settings" hx-get="/settings" hx-target="#pixie-main-content" hx-push-url="true">
+        {{ icon('settings', 12) }} Settings
+      </a>
+    </div>
+  </header>
+{% endblock %}
+
+{% block body %}
+  <div class="tools-grid" x-data="Pixie.toolsGridState()">
+    <aside class="tools-grid__filters" aria-label="Filters">
+      <div class="tools-grid__filter-group">
+        <div class="t-eyebrow">Workspace</div>
+        <select class="form-control form-control--sm"
+                hx-get="/tools/_grid"
+                hx-target=".tools-grid__cards"
+                hx-include="closest .tools-grid__filters"
+                hx-push-url="false"
+                name="workspace"
+                aria-label="Workspace filter">
+          <option value="">All tools</option>
+          {% for w in grid.workspaces %}
+            <option value="{{ w.id }}" {% if grid_state.workspace == w.id %}selected{% endif %}>{{ w.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="tools-grid__filter-group">
+        <div class="t-eyebrow">Category</div>
+        <select class="form-control form-control--sm"
+                hx-get="/tools/_grid"
+                hx-target=".tools-grid__cards"
+                hx-include="closest .tools-grid__filters"
+                name="category"
+                aria-label="Category filter">
+          <option value="">Any</option>
+          {% for cat in grid.all_categories %}
+            <option value="{{ cat }}" {% if grid_state.category == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="tools-grid__filter-group">
+        <div class="t-eyebrow">Tag</div>
+        <select class="form-control form-control--sm"
+                hx-get="/tools/_grid"
+                hx-target=".tools-grid__cards"
+                hx-include="closest .tools-grid__filters"
+                name="tag"
+                aria-label="Tag filter">
+          <option value="">Any</option>
+          {% for t in grid.all_tags %}
+            <option value="{{ t }}" {% if grid_state.tag == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="tools-grid__filter-group">
+        <div class="t-eyebrow">Status</div>
+        <select class="form-control form-control--sm"
+                hx-get="/tools/_grid"
+                hx-target=".tools-grid__cards"
+                hx-include="closest .tools-grid__filters"
+                name="status_filter"
+                aria-label="Status filter">
+          <option value="">Any</option>
+          <option value="running" {% if grid_state.status_filter == 'running' %}selected{% endif %}>Running</option>
+          <option value="dormant" {% if grid_state.status_filter == 'dormant' %}selected{% endif %}>Dormant</option>
+          <option value="failed" {% if grid_state.status_filter == 'failed' %}selected{% endif %}>Failed</option>
+        </select>
+      </div>
+
+      <div class="tools-grid__filter-group">
+        <div class="t-eyebrow">Validation</div>
+        <select class="form-control form-control--sm"
+                hx-get="/tools/_grid"
+                hx-target=".tools-grid__cards"
+                hx-include="closest .tools-grid__filters"
+                name="validation"
+                aria-label="Validation filter">
+          <option value="">Any</option>
+          <option value="pass" {% if grid_state.validation == 'pass' %}selected{% endif %}>Pass</option>
+          <option value="warn" {% if grid_state.validation == 'warn' %}selected{% endif %}>Warn</option>
+          <option value="fail" {% if grid_state.validation == 'fail' %}selected{% endif %}>Fail</option>
+          <option value="unchecked" {% if grid_state.validation == 'unchecked' %}selected{% endif %}>Unchecked</option>
+        </select>
+      </div>
+
+      <div class="tools-grid__filter-group">
+        <div class="t-eyebrow">Sort</div>
+        <select class="form-control form-control--sm"
+                hx-get="/tools/_grid"
+                hx-target=".tools-grid__cards"
+                hx-include="closest .tools-grid__filters"
+                name="sort"
+                aria-label="Sort by">
+          <option value="last_run_at" {% if grid_state.sort == 'last_run_at' %}selected{% endif %}>Last used</option>
+          <option value="name" {% if grid_state.sort == 'name' %}selected{% endif %}>Name</option>
+          <option value="run_count_total" {% if grid_state.sort == 'run_count_total' %}selected{% endif %}>Run count</option>
+          <option value="disk_bytes" {% if grid_state.sort == 'disk_bytes' %}selected{% endif %}>Disk size</option>
+          <option value="validation" {% if grid_state.sort == 'validation' %}selected{% endif %}>Validation</option>
+        </select>
+      </div>
+
+      <div class="tools-grid__filter-group">
+        <label class="t-meta" style="display:flex;align-items:center;gap:6px;">
+          <input type="checkbox" name="archived" value="1"
+                 {% if grid_state.archived %}checked{% endif %}
+                 hx-get="/tools/_grid"
+                 hx-target=".tools-grid__cards"
+                 hx-include="closest .tools-grid__filters" />
+          Show archived only
+        </label>
+      </div>
+    </aside>
+
+    <div class="tools-grid__cards">
+      {% include "partials/tool_grid_cards.html" %}
+    </div>
+
+    <div class="bulk-bar" x-show="selected.length > 0" x-cloak>
+      <span class="bulk-bar__count">
+        <span class="num mono" x-text="selected.length"></span> selected
+      </span>
+      <button class="btn btn--sm" type="button" @click="bulkArchive()">
+        {{ icon('trash', 12) }} Archive
+      </button>
+      <button class="btn btn--sm" type="button" @click="bulkUnarchive()">
+        {{ icon('refresh', 12) }} Unarchive
+      </button>
+      <button class="btn btn--sm" type="button" @click="bulkClear()">
+        {{ icon('x', 12) }} Clear
+      </button>
+    </div>
+  </div>
+{% endblock %}

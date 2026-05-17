@@ -1,0 +1,39 @@
+{
+  "templates": [
+    {
+      "name": "blank",
+      "shape": "pure synchronous (1.1)",
+      "summary": "Minimum viable: one text input, one text output, ~20-line main.py."
+    },
+    {
+      "name": "form",
+      "shape": "pure synchronous (1.1) with src/ layout",
+      "summary": "Compound-interest-style form. number+slider+select inputs; number+chart_line+table outputs."
+    },
+    {
+      "name": "chat",
+      "shape": "conversational / chat (1.5)",
+      "summary": "Chat layout, messages input, SSE-streaming text output via /stream."
+    },
+    {
+      "name": "ml-inference",
+      "shape": "stateful, big-model (1.6 + 8)",
+      "summary": "Lazy-load a model, expose /run with image input + top-k kv output. 30-min warm-keep."
+    },
+    {
+      "name": "ml-training",
+      "shape": "long-running streaming (1.3 + 1.2)",
+      "summary": "CSV input + streaming chart_line + table output. concurrent=false, background training task."
+    },
+    {
+      "name": "api-wrapper",
+      "shape": "external API caller (7)",
+      "summary": "httpx client with retry/backoff. Declares one secret; structured secret_missing error."
+    },
+    {
+      "name": "cli-wrapper",
+      "shape": "subprocess wrapper (1.1 + cli)",
+      "summary": "Wraps an external CLI (ffmpeg by default). file in / file out. Uses shutil.which."
+    }
+  ]
+}

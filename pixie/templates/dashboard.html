@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{%- from 'partials/icons.html' import icon -%}
+{% block title %}Pixie{% endblock %}
+
+{% block header %}
+<header class="header">
+  <div class="header__main">
+    <div class="header__title-row">
+      <span class="t-eyebrow">Pixie</span>
+    </div>
+    <div class="header__meta">
+      <span>A local dashboard for your personal tools.</span>
+    </div>
+  </div>
+  <div class="header__actions">
+    <button type="button"
+            class="btn btn--ghost btn--icon"
+            title="Toggle theme"
+            onclick="window.Pixie && Pixie.toggleTheme()">
+      {{ icon('sun', 13) }}
+    </button>
+  </div>
+</header>
+{% endblock %}
+
+{% block body %}
+  <div class="welcome">
+    <div class="welcome__inner">
+      <h2 class="welcome__title">{{ greeting | default('Welcome back.') }}</h2>
+      <p class="welcome__body">
+        Pick a tool from the sidebar to get started.
+      </p>
+
+      {% if recent_runs and recent_runs | length > 0 %}
+      <div class="welcome__recents">
+        <span class="t-eyebrow">Recent runs</span>
+        <ul class="welcome__recents-list" role="list">
+          {% for run in recent_runs %}
+            <li class="welcome__recent">
+              <a class="welcome__recent-link"
+                 href="/tool/{{ run.tool_id }}?run={{ run.run_id }}"
+                 hx-get="/tool/{{ run.tool_id }}?run={{ run.run_id }}"
+                 hx-target="#pixie-main-content"
+                 hx-swap="innerHTML"
+                 hx-push-url="true">
+                <span class="welcome__recent-name">{{ run.tool_name or run.tool_id }}</span>
+                <span class="welcome__recent-meta t-meta mono">{{ run.summary or run.started_at }}</span>
+                <span class="welcome__recent-icon" aria-hidden="true">{{ icon('chevron-right', 11) }}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="welcome__hint">
+        <span class="t-meta">Press <span class="kbd">Ctrl</span><span class="kbd">K</span> to jump to a tool.</span>
+      </div>
+    </div>
+  </div>
+{% endblock %}

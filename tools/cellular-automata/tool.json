@@ -1,0 +1,66 @@
+{
+  "id": "cellular-automata",
+  "name": "Cellular Automata Explorer",
+  "description": "Evolve Conway's Game of Life or a 1-D elementary CA (rules 30/90/110/184) and visualise the grid plus cell-count history.",
+  "version": "0.1.0",
+  "category": "science/complexity",
+  "icon": "grid",
+  "layout": "form",
+  "warm_keep_seconds": 300,
+  "max_memory_mb": 512,
+  "max_runtime_seconds": 30,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "rule",
+      "type": "select",
+      "label": "Rule",
+      "description": "Conway = 2-D Life. Other entries are Wolfram 1-D elementary rules.",
+      "default": "conway",
+      "options": [
+        {"value": "conway", "label": "Conway's Game of Life"},
+        {"value": "rule30", "label": "Wolfram rule 30"},
+        {"value": "rule90", "label": "Wolfram rule 90"},
+        {"value": "rule110", "label": "Wolfram rule 110"},
+        {"value": "rule184", "label": "Wolfram rule 184"}
+      ]
+    },
+    {
+      "key": "width",
+      "type": "number",
+      "label": "Grid width",
+      "default": 120,
+      "min": 16,
+      "max": 400,
+      "step": 8
+    },
+    {
+      "key": "generations",
+      "type": "number",
+      "label": "Generations",
+      "default": 120,
+      "min": 10,
+      "max": 600,
+      "step": 10
+    },
+    {
+      "key": "seed",
+      "type": "text",
+      "label": "Seed (blank for random)",
+      "description": "Integer; leave blank to use system entropy.",
+      "default": "42"
+    }
+  ],
+  "outputs": [
+    {
+      "key": "evolved",
+      "type": "image",
+      "label": "Evolved grid"
+    },
+    {
+      "key": "cell_count",
+      "type": "chart_line",
+      "label": "Live cells over time"
+    }
+  ]
+}

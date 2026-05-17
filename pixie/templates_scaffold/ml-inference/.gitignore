@@ -1,0 +1,9 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+data/
+models/*.onnx
+models/*.pt
+models/*.bin
+models/*.safetensors

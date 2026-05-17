@@ -1,0 +1,100 @@
+{# Shared output-card chrome. Used by every output partial.
+   Pattern:
+
+     {% set actions %}
+       <button …>copy</button>
+     {% endset %}
+     {% call output_card(spec, panel_id, 'text', actions=actions) %}
+       <div class="output-card__body">…</div>
+     {% endcall %}
+
+   The macro renders:
+     <section class="output-card panel" data-output-key data-output-type aria-live=…>
+       <header class="output-card__head"> label + units + actions slot </header>
+       {{ caller() }}
+       optional caption strip
+     </section>
+
+   Each card carries `data-output-key` and `data-output-type` so the run/SSE
+   layer (Phase 4d) can locate it via `[data-output-key="<key>"]`. #}
+
+{%- macro output_card(spec, panel_id, type, actions='', with_header=true) -%}
+<section class="output-card panel"
+         id="{{ panel_id }}"
+         data-output-key="{{ spec.key }}"
+         data-output-type="{{ type }}"
+         role="status"
+         aria-live="polite"
+         aria-atomic="false">
+  {% if with_header %}
+  <header class="output-card__head">
+    <div class="output-card__title">
+      <span class="t-h6">{{ spec.label }}</span>
+      {% if spec.unit %}<span class="t-meta mono">({{ spec.unit }})</span>{% endif %}
+    </div>
+    <div class="output-card__actions" data-actions-slot>{{ actions | safe }}</div>
+  </header>
+  {% endif %}
+  {{ caller() }}
+  {% if spec.caption %}
+  <footer class="output-card__caption t-meta">{{ spec.caption }}</footer>
+  {% endif %}
+</section>
+{%- endmacro -%}
+
+{# Standard copy button — partials emit this into their `actions` set block. #}
+{%- macro copy_button(label='Copy') -%}
+<button type="button" class="btn btn--ghost btn--icon btn--sm"
+        data-pixie-copy="self" aria-label="{{ label }}" title="{{ label }}">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+    <path d="M5 15V5a2 2 0 0 1 2-2h10"></path>
+  </svg>
+</button>
+{%- endmacro -%}
+
+{%- macro download_button(label='Download') -%}
+<button type="button" class="btn btn--ghost btn--icon btn--sm"
+        data-pixie-download aria-label="{{ label }}" title="{{ label }}">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path>
+  </svg>
+</button>
+{%- endmacro -%}
+
+{# Save-as dropdown -- formats resolved client-side via /api/artefacts/{id}/formats
+   once an artefact id is attached to the card (window.Pixie.saveAs handler). #}
+{%- macro save_as_dropdown(spec, type) -%}
+<div class="output-card__saveas" x-data="{ open: false }">
+  <button type="button" class="btn btn--ghost btn--sm"
+          @click="open = !open; if (open) Pixie.loadSaveAsFormats($el.closest('.output-card'))"
+          data-pixie-saveas data-output-type="{{ type }}"
+          data-default-format="{{ spec.default_export_format or '' }}"
+          aria-label="Save as">
+    Save as…
+  </button>
+  <div class="output-card__saveas-menu" x-show="open" x-transition.opacity x-cloak
+       @click.outside="open = false" role="menu"></div>
+</div>
+{%- endmacro -%}
+
+{%- macro expand_button(label='View larger') -%}
+<button type="button" class="btn btn--ghost btn--sm" data-pixie-expand
+        aria-label="{{ label }}" title="{{ label }}">
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M3 8V3h5"></path><path d="M21 8V3h-5"></path>
+    <path d="M3 16v5h5"></path><path d="M21 16v5h-5"></path>
+  </svg>
+  {{ label }}
+</button>
+{%- endmacro -%}
+
+{# Empty-state placeholder used by every partial when value is None. #}
+{%- macro empty_state(message='Configure inputs and click Run.') -%}
+<div class="output-card__empty">
+  <span class="t-meta">{{ message }}</span>
+</div>
+{%- endmacro -%}

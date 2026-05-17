@@ -1,0 +1,12 @@
+{
+  "name": "synthetic ATE=1.5 dataset",
+  "source": "tool's built-in synthetic dataset (seed 42, true ATE 1.5) used when no file is supplied",
+  "inputs": {
+    "treatment": "treatment",
+    "outcome": "outcome",
+    "confounders": ["age", "income"]
+  },
+  "expected_outputs": {},
+  "tolerance": {},
+  "tags": ["causal", "stats"]
+}

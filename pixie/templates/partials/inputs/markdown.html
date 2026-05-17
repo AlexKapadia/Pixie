@@ -1,0 +1,30 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control md-editor"
+     x-data='{ tab: "write", src: (values[{{ spec.key | tojson }}] || "") }'>
+  <div class="md-editor__tabs" role="tablist">
+    <button type="button" role="tab"
+            class="md-editor__tab" :class="tab === 'write' && 'is-active'"
+            :aria-selected="tab === 'write'"
+            @click.prevent="tab = 'write'">Write</button>
+    <button type="button" role="tab"
+            class="md-editor__tab" :class="tab === 'preview' && 'is-active'"
+            :aria-selected="tab === 'preview'"
+            @click.prevent="tab = 'preview'">Preview</button>
+  </div>
+  <div class="md-editor__panes">
+    <textarea class="textarea mono md-editor__src"
+              id="{{ field_id }}"
+              name="{{ spec.key }}"
+              rows="10"
+              x-model="src"
+              x-show="tab === 'write'"
+              @input="values[{{ spec.key | tojson }}] = src"
+              spellcheck="true"
+              {% if spec.required %}required aria-required="true"{% endif %}>{% if value is not none %}{{ value }}{% endif %}</textarea>
+    <div class="md-editor__preview scroll"
+         x-show="tab === 'preview'"
+         x-html="Pixie.renderMarkdownString(src)"></div>
+  </div>
+</div>
+{{ field_close(spec) }}

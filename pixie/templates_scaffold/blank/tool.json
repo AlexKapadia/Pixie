@@ -1,0 +1,28 @@
+{
+  "id": "{{TOOL_ID}}",
+  "name": "{{TOOL_NAME}}",
+  "description": "{{DESCRIPTION}}",
+  "version": "0.1.0",
+  "category": "general",
+  "icon": "circle",
+  "layout": "form",
+  "warm_keep_seconds": 300,
+  "max_memory_mb": 256,
+  "max_runtime_seconds": 30,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "message",
+      "type": "text",
+      "label": "Message",
+      "description": "Text to echo back."
+    }
+  ],
+  "outputs": [
+    {
+      "key": "reply",
+      "type": "text",
+      "label": "Reply"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "id": "geospatial-kde-heatmap",
+  "name": "Geospatial KDE Heatmap",
+  "description": "Estimate a 2-D kernel density from a CSV of lat/lng/weight rows and visualise it as a heatmap with peak coordinates and density histogram.",
+  "version": "0.1.0",
+  "category": "geo/statistics",
+  "icon": "map",
+  "layout": "form",
+  "warm_keep_seconds": 300,
+  "max_memory_mb": 512,
+  "max_runtime_seconds": 60,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "csv_file",
+      "type": "file",
+      "label": "CSV file",
+      "description": "Columns: lat, lng, optionally weight.",
+      "accept": [".csv"]
+    },
+    {
+      "key": "bandwidth",
+      "type": "slider",
+      "label": "Bandwidth",
+      "description": "Kernel bandwidth (Scott's-rule multiplier).",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "key": "grid_resolution",
+      "type": "slider",
+      "label": "Grid resolution",
+      "description": "Number of cells per axis.",
+      "default": 60,
+      "min": 20,
+      "max": 120,
+      "step": 5
+    }
+  ],
+  "outputs": [
+    {
+      "key": "heatmap",
+      "type": "map_heatmap",
+      "label": "Density heatmap"
+    },
+    {
+      "key": "peak",
+      "type": "kv",
+      "label": "Peak coordinates"
+    },
+    {
+      "key": "density_histogram",
+      "type": "chart_histogram",
+      "label": "Density distribution"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control image-input"
+     x-data='Pixie.imageInput()'
+     :class="{ "is-dragover": dragover, "is-filled": files.length > 0 }"
+     @dragover.prevent="dragover = true"
+     @dragleave.prevent="dragover = false"
+     @drop.prevent="onDrop($event)">
+  <input type="file"
+         class="sr-only"
+         id="{{ field_id }}"
+         name="{{ spec.key }}"
+         accept="image/*"
+         {% if spec.multiple %}multiple{% endif %}
+         {% if spec.required %}required aria-required="true"{% endif %}
+         @change="onChange($event)" />
+  <template x-if="files.length === 0">
+    <label for="{{ field_id }}" class="file-drop file-drop--empty">
+      <span class="file-drop__icon" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><circle cx="6" cy="6.5" r="1.2"/><path d="m3 12 3.5-3.5L10 12l3-3"/></svg>
+      </span>
+      <span class="file-drop__copy">
+        <span class="file-drop__primary">Drop an image or <span class="file-drop__browse">browse</span></span>
+        <span class="file-drop__hint t-meta">PNG, JPG, WebP, GIF{% if spec.max_size_mb %} · max {{ spec.max_size_mb }} MB{% endif %}</span>
+      </span>
+    </label>
+  </template>
+  <template x-if="files.length > 0">
+    <div class="image-input__list">
+      <template x-for="(f, i) in files" :key="i">
+        <div class="image-input__row panel">
+          <div class="image-input__thumb checker" :style="`background-image:url(${f.preview}); background-size:cover; background-position:center;`"></div>
+          <div class="image-input__meta">
+            <div class="image-input__name" x-text="f.name"></div>
+            <div class="image-input__dim t-meta mono" x-text="(f.dim || '') + ' · ' + Pixie.fmtBytes(f.size)"></div>
+            <div class="image-input__actions">
+              <button type="button" class="btn btn--sm" @click.prevent="document.getElementById({{ field_id | tojson }}).click()">Replace</button>
+              <button type="button" class="btn btn--ghost btn--sm" @click.prevent="remove(i)">Remove</button>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
+</div>
+{{ field_close(spec) }}

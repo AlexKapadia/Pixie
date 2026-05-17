@@ -1,0 +1,43 @@
+{#-
+  timeout.html — "Tool exceeded its time limit."
+
+  Caller context:
+    tool_id          — required
+    tool_label       — optional
+    runtime_seconds  — int, the limit hit (required)
+    last_log_line    — optional, the last stderr line before kill
+    elapsed_seconds  — optional, how long it actually ran
+-#}
+{%- from 'partials/error.html' import error_block -%}
+{%- set body_html -%}
+  <dl class="pixie-error__dl">
+    {% if elapsed_seconds %}<dt class="t-meta">Elapsed</dt><dd class="mono">{{ elapsed_seconds }}s</dd>{% endif %}
+    <dt class="t-meta">Limit</dt><dd class="mono">{{ runtime_seconds }}s</dd>
+    {% if last_log_line %}<dt class="t-meta">Last log line</dt><dd class="mono">{{ last_log_line }}</dd>{% endif %}
+  </dl>
+{%- endset -%}
+{{ error_block(
+     kind='timeout',
+     severity='warn',
+     tool_id=tool_id,
+     tool_label=tool_label,
+     headline=('Tool exceeded its time limit (' ~ runtime_seconds ~ 's).'),
+     message='The run was cancelled to keep the dashboard responsive.',
+     body_html=body_html,
+     primary_action={
+       'label': 'Retry',
+       'kind': 'copy',
+       'icon': 'refresh',
+       'text': 'retry',
+       'toast': 'Modify your input and click Run again.'
+     },
+     secondary_actions=[
+       {
+         'label': 'Increase time limit in settings',
+         'kind': 'link',
+         'icon': 'settings',
+         'url': '/tool/' ~ tool_id ~ '/settings#resources',
+       },
+     ],
+     hint='If this tool routinely exceeds the limit, raise its per-tool resource cap rather than the global one.'
+) }}

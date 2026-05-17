@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% from 'partials/icons.html' import icon %}
+{% block title %}Library · Pixie{% endblock %}
+
+{% block header %}
+<header class="header">
+  <div class="header__main">
+    <div class="header__title-row">
+      <h1 class="t-h3">Library</h1>
+      <span class="t-meta library__count mono" id="library-count"
+            data-total="{{ library_count }}">
+        <span id="library-visible">{{ library_cards | length }}</span>
+        of <span id="library-total">{{ library_count }}</span>
+        <span id="library-noun">artefact{{ '' if library_count == 1 else 's' }}</span>
+      </span>
+    </div>
+    <div class="header__meta">
+      <span>Every output your tools produce lives here. Local-only, searchable, never leaves your machine.</span>
+    </div>
+  </div>
+  <div class="header__actions">
+    <form class="library__search" method="get" action="/library"
+          hx-get="/library/_grid" hx-target="#library-grid"
+          hx-trigger="input from:input delay:250ms, change from:select"
+          hx-include="closest form"
+          hx-swap="innerHTML"
+          hx-push-url="true">
+      <span class="library__search-icon" aria-hidden="true">{{ icon('search', 13) }}</span>
+      <input type="search" name="label" placeholder="Search filename, label, tag…"
+             value="{{ library_state.label or '' }}" aria-label="Search artefacts"
+             x-ref="search" />
+      <span class="library__search-sep" aria-hidden="true"></span>
+      <select name="sort" aria-label="Sort">
+        <option value="date_desc" {% if library_state.sort == 'date_desc' %}selected{% endif %}>Newest first</option>
+        <option value="size_desc" {% if library_state.sort == 'size_desc' %}selected{% endif %}>Largest first</option>
+        <option value="name" {% if library_state.sort == 'name' %}selected{% endif %}>Filename A–Z</option>
+        <option value="tool" {% if library_state.sort == 'tool' %}selected{% endif %}>By tool</option>
+      </select>
+      {% if library_state.tool %}<input type="hidden" name="tool" value="{{ library_state.tool }}" />{% endif %}
+      {% if library_state.mime %}<input type="hidden" name="mime" value="{{ library_state.mime }}" />{% endif %}
+      {% if library_state.starred %}<input type="hidden" name="starred" value="true" />{% endif %}
+      {% if library_state.tag %}<input type="hidden" name="tag" value="{{ library_state.tag }}" />{% endif %}
+    </form>
+    <button type="button"
+            class="btn btn--ghost btn--icon"
+            title="Toggle theme"
+            onclick="window.Pixie && Pixie.toggleTheme()">
+      {{ icon('sun', 13) }}
+    </button>
+  </div>
+</header>
+{% endblock %}
+
+{% block body %}
+<section class="library" x-data="libraryPage()" x-init="$store.library = $data"
+         @keydown.window="onKey($event)"
+         @pixie:library-grid-updated.window="refreshCount($event.detail)">
+  <div class="library__layout">
+    {% include "partials/library_filters.html" %}
+
+    <div class="library__main">
+      <div id="library-grid" class="library__grid"
+           @htmx:after-swap.window="refreshCount()">
+        {% if library_cards %}
+          {% include "partials/library_grid.html" %}
+        {% else %}
+          {% include "partials/library_empty.html" %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="library__bulkbar" x-show="selectedIds.length > 0"
+       x-transition x-cloak role="region" aria-label="Bulk actions">
+    {% include "partials/library_bulk_bar.html" %}
+  </div>
+</section>
+
+<script>
+window.libraryPage = function () {
+  return {
+    selectedIds: [],
+    visibleCount: document.querySelectorAll('.library-card').length,
+
+    refreshCount(payload) {
+      const ids = new Set(Array.from(document.querySelectorAll('.library-card[data-artefact-id]'))
+        .map(el => Number(el.dataset.artefactId)));
+      this.visibleCount = ids.size;
+      this.selectedIds = this.selectedIds.filter(id => ids.has(id));
+      const vis = document.getElementById('library-visible');
+      if (vis) vis.textContent = String(ids.size);
+      if (payload && typeof payload.total === 'number') {
+        const total = document.getElementById('library-total');
+        const noun = document.getElementById('library-noun');
+        if (total) total.textContent = String(payload.total);
+        if (noun) noun.textContent = 'artefact' + (payload.total === 1 ? '' : 's');
+      }
+    },
+
+    toggle(id, ev) {
+      if (ev && ev.shiftKey) ev.preventDefault();
+      const idx = this.selectedIds.indexOf(id);
+      if (idx === -1) this.selectedIds.push(id);
+      else this.selectedIds.splice(idx, 1);
+    },
+
+    clearSelection() { this.selectedIds = []; },
+
+    selectAll() {
+      this.selectedIds = Array.from(document.querySelectorAll('.library-card[data-artefact-id]'))
+        .map(el => Number(el.dataset.artefactId));
+    },
+
+    async bulk(action, label) {
+      if (!this.selectedIds.length) return;
+      const ids = this.selectedIds.slice();
+      const body = { ids, action };
+      if (label) body.label = label;
+      const resp = await fetch('/api/artefacts/bulk', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        window.dispatchEvent(new CustomEvent('pixie:toast', { detail: { message: 'Bulk action failed.', kind: 'error' }}));
+        return;
+      }
+      const verb = action === 'star' ? 'Starred' :
+                   action === 'unstar' ? 'Unstarred' :
+                   action === 'delete' ? 'Moved to trash' :
+                   action === 'label' ? 'Labelled' : 'Updated';
+      window.dispatchEvent(new CustomEvent('pixie:toast',
+        { detail: { message: `${verb} ${ids.length} artefact${ids.length === 1 ? '' : 's'}.` }}));
+      if (action === 'delete') {
+        // Optimistic removal — fade out + remove the cards.
+        ids.forEach(id => {
+          const card = document.querySelector(`.library-card[data-artefact-id="${id}"]`);
+          if (card) {
+            card.style.transition = 'opacity .18s ease, transform .18s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(.96)';
+            setTimeout(() => card.remove(), 200);
+          }
+        });
+        setTimeout(() => { this.clearSelection(); this.refreshCount(); window.Pixie?.refreshLibraryGrid?.(); }, 220);
+      } else {
+        // Star / unstar / label — re-fetch the grid fragment to reflect new state.
+        this.clearSelection();
+        window.Pixie?.refreshLibraryGrid?.();
+      }
+    },
+
+    onKey(ev) {
+      if (ev.key === '/' && document.activeElement.tagName !== 'INPUT') {
+        ev.preventDefault();
+        this.$refs.search && this.$refs.search.focus();
+      }
+      if (ev.key === 'Escape') this.clearSelection();
+      if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'a'
+          && document.activeElement.tagName !== 'INPUT') {
+        ev.preventDefault(); this.selectAll();
+      }
+    },
+  };
+};
+</script>
+{% endblock %}

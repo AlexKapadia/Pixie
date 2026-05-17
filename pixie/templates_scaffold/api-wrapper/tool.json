@@ -1,0 +1,35 @@
+{
+  "id": "{{TOOL_ID}}",
+  "name": "{{TOOL_NAME}}",
+  "description": "{{DESCRIPTION}}",
+  "version": "0.1.0",
+  "category": "integration",
+  "icon": "globe",
+  "layout": "form",
+  "warm_keep_seconds": 300,
+  "max_memory_mb": 256,
+  "max_runtime_seconds": 30,
+  "secrets": [
+    {
+      "key": "API_KEY",
+      "description": "Bearer token for the upstream API. Set via the Pixie settings page or the set-secret skill.",
+      "required": false
+    }
+  ],
+  "inputs": [
+    {
+      "key": "prompt",
+      "type": "textarea",
+      "label": "Prompt",
+      "description": "Free-text query to send to the upstream API.",
+      "default": "ping"
+    }
+  ],
+  "outputs": [
+    {
+      "key": "result",
+      "type": "kv",
+      "label": "Response"
+    }
+  ]
+}

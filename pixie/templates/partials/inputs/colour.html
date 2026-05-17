@@ -1,0 +1,32 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control colour"
+     x-data='{
+       hex: ({{ initial_json }} || "#5563d1"),
+       sync(h) { this.hex = h; values[{{ spec.key | tojson }}] = h; },
+       normalise() {
+         let h = (this.hex || "").trim();
+         if (!h) return;
+         if (h[0] !== "#") h = "#" + h;
+         if (/^#[0-9a-fA-F]{6}$/.test(h) || /^#[0-9a-fA-F]{3}$/.test(h)) this.sync(h.toLowerCase());
+       }
+     }'
+     x-init="sync(hex)">
+  <label class="colour__swatch" :style="`background: ${hex};`" aria-label="Colour swatch">
+    <input type="color"
+           class="sr-only"
+           id="{{ field_id }}"
+           :value="hex"
+           @input="sync($event.target.value)" />
+  </label>
+  <input type="text"
+         class="input mono colour__hex"
+         x-model="hex"
+         @change="normalise()"
+         pattern="^#?[0-9a-fA-F]{6}$"
+         maxlength="7"
+         autocomplete="off"
+         aria-label="{{ spec.label }} hex code" />
+  <input type="hidden" name="{{ spec.key }}" :value="hex" />
+</div>
+{{ field_close(spec) }}

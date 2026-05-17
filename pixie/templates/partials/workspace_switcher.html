@@ -1,0 +1,51 @@
+{%- from 'partials/icons.html' import icon -%}
+{# Workspace switcher — sits at the top of the sidebar above the search box.
+   Hidden when no workspaces exist yet. Reads the currently active workspace
+   from the persisted setting (server-rendered into ``active_workspace_id``).
+#}
+{% if sidebar_workspaces is defined and (sidebar_workspaces or active_workspace_name) %}
+  <div class="workspace-switcher" x-data="{ open: false }" @keydown.escape.window="open = false">
+    <button type="button"
+            class="workspace-switcher__current"
+            @click="open = !open"
+            :aria-expanded="open ? 'true' : 'false'"
+            aria-haspopup="menu"
+            title="Switch workspace">
+      <span class="workspace-switcher__icon">{{ icon('folder', 12) }}</span>
+      <span class="workspace-switcher__label">{{ active_workspace_name or 'All tools' }}</span>
+      {{ icon('chevron-down', 11) }}
+    </button>
+    <div class="workspace-switcher__list"
+         x-show="open"
+         x-cloak
+         @click.outside="open = false"
+         role="menu">
+      <a class="workspace-switcher__item"
+         href="/?workspace="
+         hx-post="/api/workspaces/0/activate"
+         hx-swap="none"
+         @click="setTimeout(() => location.reload(), 80)"
+         role="menuitem">
+        <span class="workspace-switcher__item-name">All tools</span>
+        <span class="t-meta">{{ sidebar_groups | sum(attribute='1', start=[]) | length }}</span>
+      </a>
+      {% for w in sidebar_workspaces %}
+        <a class="workspace-switcher__item{% if active_workspace_id == w.id %} is-active{% endif %}"
+           href="/?workspace={{ w.id }}"
+           hx-post="/api/workspaces/{{ w.id }}/activate"
+           hx-swap="none"
+           @click="setTimeout(() => location.reload(), 80)"
+           role="menuitem">
+          <span class="workspace-switcher__item-name">{{ w.name }}</span>
+          <span class="t-meta num mono">{{ w.tool_count }}</span>
+        </a>
+      {% endfor %}
+      <a class="workspace-switcher__item workspace-switcher__manage"
+         href="/tools"
+         hx-get="/tools" hx-target="#pixie-main-content" hx-push-url="true"
+         role="menuitem">
+        {{ icon('settings', 11) }} Manage workspaces
+      </a>
+    </div>
+  </div>
+{% endif %}

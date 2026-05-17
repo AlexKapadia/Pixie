@@ -1,0 +1,9 @@
+{#- Hidden inputs are not visible. Wrap in field with display:none so show_if still works. -#}
+{%- from "_macros.html" import show_if_attr -%}
+<div class="field field--hidden" hidden style="display:none;" data-key="{{ spec.key }}" {{ show_if_attr(spec) }}>
+  <input type="hidden"
+         id="{{ field_id }}"
+         name="{{ spec.key }}"
+         x-model="values[{{ spec.key | tojson }}]"
+         {% if value is not none %}value="{{ value }}"{% endif %} />
+</div>

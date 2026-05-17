@@ -1,0 +1,10 @@
+{
+  "name": "Basic: sqrt(4) = 2",
+  "source": "Mathematical identity (sqrt(4) = 2)",
+  "inputs": { "x": 4 },
+  "expected_outputs": {
+    "result": 2.0,
+    "summary": "sqrt(4.0) = 2.000000"
+  },
+  "tags": ["happy-path"]
+}

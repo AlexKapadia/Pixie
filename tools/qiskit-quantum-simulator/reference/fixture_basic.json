@@ -1,0 +1,12 @@
+{
+  "name": "3-qubit GHZ state",
+  "source": "H + CX + CX produces (|000⟩+|111⟩)/√2; measurement counts cluster on 000/111",
+  "inputs": {
+    "circuit": "qubits 3\nH 0\nCX 0 1\nCX 1 2",
+    "shots": 1024,
+    "success_state": "000"
+  },
+  "expected_outputs": {},
+  "tolerance": {},
+  "tags": ["quantum", "ghz"]
+}

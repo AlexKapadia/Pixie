@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ tool.name if tool else "Chat" }} — Pixie{% endblock %}
+{% block body %}
+  {# TODO(phase-4b): chat layout — message column plus right rail. #}
+  <h1>{{ tool.name if tool else "Chat" }}</h1>
+{% endblock %}

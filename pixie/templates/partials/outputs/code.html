@@ -1,0 +1,17 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, copy_button -%}
+{% set actions %}{% if has_value %}{{ copy_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'code', actions=actions) %}
+  <div class="output-card__body" style="padding:0;">
+    {% if has_value %}
+      {% set src = value.text if value is mapping and 'text' in value else value %}
+      <div class="output-code" data-copy-target>
+        <textarea data-pixie-code-out
+                  data-language="{{ spec.language or 'text' }}"
+                  spellcheck="false"
+                  aria-label="{{ spec.label }} code">{{ src }}</textarea>
+      </div>
+    {% else %}
+      <div class="output-card__body">{{ empty_state() }}</div>
+    {% endif %}
+  </div>
+{% endcall %}

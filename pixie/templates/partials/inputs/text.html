@@ -1,0 +1,16 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control">
+  <input type="text"
+         class="input"
+         id="{{ field_id }}"
+         name="{{ spec.key }}"
+         x-model="values[{{ spec.key | tojson }}]"
+         {% if spec.placeholder %}placeholder="{{ spec.placeholder }}"{% endif %}
+         {% if spec.max_length %}maxlength="{{ spec.max_length }}"{% endif %}
+         {% if spec.required %}required aria-required="true"{% endif %}
+         autocomplete="off"
+         spellcheck="false"
+         {% if value is not none %}value="{{ value }}"{% endif %} />
+</div>
+{{ field_close(spec) }}

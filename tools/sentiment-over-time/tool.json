@@ -1,0 +1,61 @@
+{
+  "id": "sentiment-over-time",
+  "name": "Sentiment Over Time",
+  "description": "Score per-row sentiment in a CSV with VADER, then plot a rolling-mean sentiment curve and emit a per-window summary table.",
+  "version": "0.1.0",
+  "category": "nlp",
+  "icon": "trending-up",
+  "layout": "form",
+  "warm_keep_seconds": 300,
+  "max_memory_mb": 512,
+  "max_runtime_seconds": 60,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "dataset_csv",
+      "type": "file",
+      "label": "CSV with date and text columns",
+      "accept": ".csv"
+    },
+    {
+      "key": "date_column",
+      "type": "text",
+      "label": "Date column",
+      "default": "date"
+    },
+    {
+      "key": "text_column",
+      "type": "text",
+      "label": "Text column",
+      "default": "text"
+    },
+    {
+      "key": "window_days",
+      "type": "number",
+      "label": "Rolling window (days)",
+      "default": 7,
+      "min": 1,
+      "max": 90,
+      "step": 1
+    }
+  ],
+  "outputs": [
+    {
+      "key": "sentiment_curve",
+      "type": "chart_line",
+      "label": "Rolling mean sentiment"
+    },
+    {
+      "key": "window_summary",
+      "type": "table",
+      "label": "Per-window summary",
+      "columns": [
+        {"key": "window_start", "label": "Window start", "type": "string"},
+        {"key": "n_messages", "label": "Messages", "type": "number"},
+        {"key": "mean_compound", "label": "Mean compound", "type": "number"},
+        {"key": "share_positive", "label": "% positive", "type": "number"},
+        {"key": "share_negative", "label": "% negative", "type": "number"}
+      ]
+    }
+  ]
+}

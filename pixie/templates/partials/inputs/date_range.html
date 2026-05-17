@@ -1,0 +1,24 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control date-range"
+     x-data='{
+       lo: ({{ initial_json }} && {{ initial_json }}.from) || "",
+       hi: ({{ initial_json }} && {{ initial_json }}.to) || "",
+       sync() { values[{{ spec.key | tojson }}] = { from: this.lo, to: this.hi }; }
+     }'
+     x-init="sync()">
+  <input type="date"
+         class="input mono"
+         id="{{ field_id }}"
+         x-model="lo" @change="sync()"
+         aria-label="{{ spec.label }} from" />
+  <span class="date-range__arrow" aria-hidden="true">→</span>
+  <input type="date"
+         class="input mono"
+         x-model="hi" @change="sync()"
+         aria-label="{{ spec.label }} to" />
+  <input type="hidden" name="{{ spec.key }}"
+         data-json-type="json"
+         :value="JSON.stringify({ from: lo, to: hi })" />
+</div>
+{{ field_close(spec) }}

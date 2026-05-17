@@ -1,0 +1,43 @@
+{#-
+  spawn.html — "Tool failed to start."
+
+  Caller context:
+    tool_id    — required
+    tool_label — optional, human name
+    stderr     — captured stderr from the launcher (optional)
+    exit_code  — int (optional)
+-#}
+{%- from 'partials/error.html' import error_block -%}
+{{ error_block(
+     kind='spawn',
+     severity='error',
+     tool_id=tool_id,
+     tool_label=tool_label,
+     headline='Tool failed to start.',
+     message=(
+       'The tool process did not survive healthz polling. '
+       'Pixie spawned ' ~ tool_id ~ ' but its /schema endpoint never came up.'
+     ),
+     details=stderr,
+     primary_action={
+       'label': 'Re-validate',
+       'method': 'post',
+       'url': '/api/tools/' ~ tool_id ~ '/validate',
+       'icon': 'refresh',
+     },
+     secondary_actions=[
+       {
+         'label': 'Hand off to debug-tool',
+         'kind': 'copy-prompt',
+         'icon': 'wand',
+         'prompt': 'In Claude Code, run: debug the ' ~ tool_id ~ ' tool.'
+       },
+       {
+         'label': 'Open tool folder',
+         'kind': 'link',
+         'icon': 'folder',
+         'url': '/api/tools/' ~ tool_id ~ '/reveal',
+       },
+     ],
+     hint='Validator output is the fastest path to a fix. The Claude Code hand-off copies a ready prompt.'
+) }}

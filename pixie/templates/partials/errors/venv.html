@@ -1,0 +1,36 @@
+{#-
+  venv.html — "Tool is not installed."
+
+  Caller context:
+    tool_id    — required
+    tool_label — optional
+    venv_path  — optional, the expected venv location
+-#}
+{%- from 'partials/error.html' import error_block -%}
+{{ error_block(
+     kind='venv',
+     severity='warn',
+     tool_id=tool_id,
+     tool_label=tool_label,
+     headline='Tool is not installed.',
+     message=(
+       'The .venv folder is missing for ' ~ tool_id ~ ' — Pixie does not install '
+       'dependencies itself, that is a Claude Code responsibility.'
+     ),
+     details=('Expected at: ' ~ (venv_path or ('tools/' ~ tool_id ~ '/.venv/'))),
+     primary_action={
+       'label': 'Copy install prompt',
+       'kind': 'copy-prompt',
+       'icon': 'copy',
+       'prompt': 'In Claude Code, run: re-validate ' ~ tool_id ~ ' (this will run uv sync in tools/' ~ tool_id ~ ').',
+     },
+     secondary_actions=[
+       {
+         'label': 'Re-validate',
+         'method': 'post',
+         'icon': 'refresh',
+         'url': '/api/tools/' ~ tool_id ~ '/validate',
+       },
+     ],
+     hint='Once .venv exists, the next click on the tool spawns it normally.'
+) }}

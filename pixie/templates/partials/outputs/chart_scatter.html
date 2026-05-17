@@ -1,0 +1,36 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, expand_button -%}
+{% set actions %}{% if has_value %}{{ expand_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'chart_scatter', actions=actions) %}
+  <div class="output-card__body">
+    {% if has_value %}
+      <div id="chart-{{ panel_id }}" class="output-chart"
+           role="img" aria-label="{{ spec.label }} scatter plot"></div>
+      <script type="application/json" id="data-{{ panel_id }}">{{ value | tojson_safe | safe }}</script>
+      <script>
+        (function () {
+          var el = document.getElementById('chart-{{ panel_id }}');
+          var out = JSON.parse(document.getElementById('data-{{ panel_id }}').textContent);
+          var series = out.series || [];
+          var data = series.map(function (s) {
+            var pts = s.points || [];
+            return {
+              type: 'scatter', mode: 'markers', name: s.name || '',
+              x: pts.map(function (p) { return p.x; }),
+              y: pts.map(function (p) { return p.y; }),
+              text: pts.map(function (p) { return p.label || ''; }),
+              marker: {
+                size: pts.map(function (p) { return p.size || 7; }),
+                color: pts.map(function (p) { return p.colour || undefined; }),
+                opacity: 0.8, line: { width: 0 }
+              },
+              hovertemplate: '%{text}<br>(%{x}, %{y})<extra></extra>'
+            };
+          });
+          window.Pixie && Pixie.makeChart(el, data, { showlegend: series.length > 1 });
+        })();
+      </script>
+    {% else %}
+      {{ empty_state() }}
+    {% endif %}
+  </div>
+{% endcall %}

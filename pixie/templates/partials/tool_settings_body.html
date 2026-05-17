@@ -1,0 +1,187 @@
+{%- from 'partials/icons.html' import icon -%}
+{%- from 'partials/setting_section.html' import setting_section -%}
+
+{# ------------------ Secrets ------------------ #}
+{% call setting_section('Secrets & API keys', icon=icon('key', 13),
+                        description='Stored in tools/' ~ tool.tool_id ~ '/.env. Values are never displayed after save.') %}
+  {% if secrets_rows %}
+    <div class="secret-list" id="secret-list">
+      {% for row in secrets_rows %}
+        {% with row=row, tool=tool %}
+          {% include "partials/secret_row.html" %}
+        {% endwith %}
+      {% endfor %}
+    </div>
+    <div class="settings-advisory">
+      {{ icon('alert-triangle', 12) }}
+      Pixie shows whether a key is <strong>set</strong> or <strong>not set</strong>; it never displays a value back to you. Replace is the only edit path.
+    </div>
+  {% else %}
+    <div class="settings-empty">
+      <span class="t-body">This tool declares no secrets.</span>
+      <span class="t-meta">Tools list their required secrets in <span class="mono">tool.json</span>. Add one there to surface a row here.</span>
+    </div>
+  {% endif %}
+{% endcall %}
+
+{# ------------------ Resource overrides ------------------ #}
+{% call setting_section('Resource overrides', icon=icon('chart', 13),
+                        description='Per-tool overrides for the declared defaults in tool.json.') %}
+  <form class="settings-form"
+        hx-post="/tool/{{ tool.tool_id }}/overrides"
+        hx-swap="none">
+    <div class="settings-row">
+      <div class="settings-row__label">
+        <span class="t-h6">Max memory (MB)</span>
+        <span class="t-meta">Default: <span class="mono num">{{ defaults.max_memory_mb }}</span></span>
+      </div>
+      <div class="settings-row__control">
+        <input class="input num mono" type="number" min="64" max="65536" step="64"
+               name="max_memory_mb" value="{{ effective.max_memory_mb }}" />
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-row__label">
+        <span class="t-h6">Max runtime (s)</span>
+        <span class="t-meta">Default: <span class="mono num">{{ defaults.max_runtime_seconds }}</span></span>
+      </div>
+      <div class="settings-row__control">
+        <input class="input num mono" type="number" min="1" max="86400" step="5"
+               name="max_runtime_seconds" value="{{ effective.max_runtime_seconds }}" />
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-row__label">
+        <span class="t-h6">Warm-keep (s)</span>
+        <span class="t-meta">Default: <span class="mono num">{{ defaults.warm_keep_seconds }}</span></span>
+      </div>
+      <div class="settings-row__control">
+        <input class="input num mono" type="number" min="0" max="86400" step="30"
+               name="warm_keep_seconds" value="{{ effective.warm_keep_seconds }}" />
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-row__label">
+        <span class="t-h6">Allow concurrent runs</span>
+        <span class="t-meta">Default: <span class="mono">{{ 'true' if defaults.concurrent else 'false' }}</span>. When off, runs queue per tool.</span>
+      </div>
+      <div class="settings-row__control">
+        <label class="toggle">
+          <input type="checkbox" name="concurrent" value="1"
+                 {% if effective.concurrent %}checked{% endif %} />
+          <span class="toggle__track"><span class="toggle__thumb"></span></span>
+          <span class="toggle__label">{{ 'On' if effective.concurrent else 'Off' }}</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-form__actions">
+      <button type="submit" class="btn btn--primary">{{ icon('check', 12) }} Save overrides</button>
+      <span class="t-meta">Stored in <span class="mono">tool_state.overrides_json</span>.</span>
+    </div>
+  </form>
+{% endcall %}
+
+{# ------------------ Validation ------------------ #}
+{% call setting_section('Validation', icon=icon('check', 13),
+                        description='Re-run the 11 deterministic checks against this tool.') %}
+  <div class="settings-row">
+    <div class="settings-row__label">
+      <span class="t-h6">Latest report</span>
+      <span class="t-meta">
+        {% if latest_report %}
+          <span class="badge badge--{{ latest_report.overall }}">{{ latest_report.overall }}</span>
+          last run {{ latest_report.timestamp }}
+        {% else %}
+          No validation run on record.
+        {% endif %}
+      </span>
+    </div>
+    <div class="settings-row__control">
+      <button type="button" class="btn"
+              hx-post="/tool/{{ tool.tool_id }}/validate-now"
+              hx-target="#validation-panel"
+              hx-swap="innerHTML"
+              hx-disabled-elt="this"
+              hx-indicator="#validate-indicator">
+        {{ icon('refresh', 12) }} Re-validate
+      </button>
+      <span id="validate-indicator" class="htmx-indicator t-meta">Running checks…</span>
+    </div>
+  </div>
+  <div id="validation-panel" class="validation-panel">
+    {% if latest_report %}
+      {% set _last = latest_report %}
+      {% from 'partials/validation_report.html' import validation_report %}
+      {{ validation_report(_last.report, tool.tool_id) }}
+    {% endif %}
+  </div>
+{% endcall %}
+
+{# ------------------ Maintenance ------------------ #}
+{% call setting_section('Maintenance', icon=icon('refresh', 13),
+                        description='Open the folder, hot-reload, or clear this tool\'s history.') %}
+  <div class="settings-row">
+    <div class="settings-row__label">
+      <span class="t-h6">View source</span>
+      <span class="t-meta mono">{{ tool.path }}</span>
+    </div>
+    <div class="settings-row__control">
+      <button type="button" class="btn"
+              hx-post="/tool/{{ tool.tool_id }}/open-folder"
+              hx-swap="none">
+        {{ icon('folder', 12) }} Open folder
+      </button>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <div class="settings-row__label">
+      <span class="t-h6">Hot reload</span>
+      <span class="t-meta">Stops the warm subprocess so the next click re-spawns it.</span>
+    </div>
+    <div class="settings-row__control">
+      <button type="button" class="btn"
+              hx-post="/tool/{{ tool.tool_id }}/hot-reload"
+              hx-swap="none">
+        {{ icon('refresh', 12) }} Reload
+      </button>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <div class="settings-row__label">
+      <span class="t-h6">Clear run history</span>
+      <span class="t-meta">Drops every recorded run for this tool.</span>
+    </div>
+    <div class="settings-row__control">
+      <form hx-post="/settings/clear-history"
+            hx-confirm="Clear all run history for {{ tool.tool_id }}? This cannot be undone."
+            hx-swap="none">
+        <input type="hidden" name="tool_id" value="{{ tool.tool_id }}" />
+        <button type="submit" class="btn btn--danger">
+          {{ icon('trash', 12) }} Clear history
+        </button>
+      </form>
+    </div>
+  </div>
+{% endcall %}
+
+{# ------------------ Danger zone ------------------ #}
+{% call setting_section('Danger zone', icon=icon('alert-triangle', 13),
+                        description='Destructive operations live in Claude Code, not in Pixie.', danger=True) %}
+  <div class="danger-zone__body">
+    <p class="t-body">
+      Removing this tool is a Claude Code action. From your terminal, run:
+    </p>
+    <pre class="mono danger-zone__cmd"
+         onclick="navigator.clipboard && navigator.clipboard.writeText(this.textContent) && window.Pixie && Pixie.toast('Copied to clipboard.')">/skills/remove-tool {{ tool.tool_id }}</pre>
+    <p class="t-meta">
+      Click the snippet to copy. Pixie itself never deletes tools; Claude Code's
+      <span class="mono">remove-tool</span> skill owns the workflow.
+    </p>
+  </div>
+{% endcall %}

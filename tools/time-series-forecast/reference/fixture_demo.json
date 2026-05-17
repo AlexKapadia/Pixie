@@ -1,0 +1,21 @@
+{
+  "name": "Built-in demo series, auto-ARIMA",
+  "source": "Synthetic 200-day trend + weekly seasonality, seed 0",
+  "inputs": {
+    "horizon_days": 14,
+    "model": "auto_arima",
+    "seasonality": "none",
+    "confidence": 95.0
+  },
+  "expected_outputs": {
+    "metrics": {
+      "model": "auto_arima",
+      "history points": 200,
+      "forecast horizon": 14
+    }
+  },
+  "tolerance": {
+    "metrics": {"allow_extra": true}
+  },
+  "tags": ["demo", "auto-arima"]
+}

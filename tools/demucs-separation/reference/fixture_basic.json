@@ -1,0 +1,11 @@
+{
+  "name": "synthetic stereo split",
+  "source": "built-in 440/220 Hz stereo tone (no real audio uploaded)",
+  "inputs": {
+    "audio_input": null,
+    "model": "htdemucs"
+  },
+  "expected_outputs": {},
+  "tolerance": {},
+  "tags": ["separation"]
+}

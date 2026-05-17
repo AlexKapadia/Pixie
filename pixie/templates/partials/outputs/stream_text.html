@@ -1,0 +1,20 @@
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, copy_button -%}
+{% set actions %}{% if has_value %}{{ copy_button() }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'stream_text', actions=actions) %}
+  <div class="output-card__body">
+    {# The streaming endpoint emits SSE events keyed by output:<key>. htmx-ext-sse
+       binds them via sse-swap on this section's body. The trailing caret blinks
+       until the server emits `done:true` (the SSE handler sets data-done on the
+       output-stream wrapper). #}
+    <div class="output-stream"
+         sse-swap="output:{{ spec.key }}"
+         hx-swap="beforeend">
+      <span class="output-stream__body" data-copy-target>
+        {% if has_value %}
+          {%- if value is mapping and 'text' in value -%}{{ value.text }}
+          {%- else -%}{{ value }}{%- endif -%}
+        {% endif %}
+      </span><span class="stream-caret" aria-hidden="true"></span>
+    </div>
+  </div>
+{% endcall %}

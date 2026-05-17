@@ -1,0 +1,32 @@
+{#-
+  Shared macros for input partials. Imported by every per-type partial.
+
+  All partials are wrapped in field_open/field_close so the visual
+  scaffolding (label, hint, required asterisk, show_if x-show, error slot)
+  is consistent. Each partial owns the actual control between the two
+  macro calls.
+-#}
+
+{% macro show_if_attr(spec) -%}
+  {%- if spec.show_if -%}
+    x-show="values[{{ spec.show_if.key | tojson }}] === {{ spec.show_if.equals | tojson }}"
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro field_open(spec, field_id, control_classes="") -%}
+<div class="field field--{{ spec.type }}"
+     data-key="{{ spec.key }}"
+     {{ show_if_attr(spec) }}>
+  {% if spec.label %}
+  <label class="field__label" for="{{ field_id }}">
+    <span>{{ spec.label }}{% if spec.required %}<span class="field__req" aria-hidden="true">*</span>{% endif %}</span>
+  </label>
+  {% endif %}
+{%- endmacro %}
+
+{% macro field_close(spec) -%}
+  {% if spec.description %}
+  <div class="field__hint">{{ spec.description }}</div>
+  {% endif %}
+</div>
+{%- endmacro %}

@@ -1,0 +1,227 @@
+{%- from 'partials/icons.html' import icon -%}
+{%- from 'partials/setting_section.html' import setting_section -%}
+{% set p = persisted_settings %}
+
+<form id="global-settings-form"
+      class="settings-form"
+      hx-post="/settings"
+      hx-target="#settings-body"
+      hx-swap="innerHTML">
+
+  {% call setting_section('Appearance', icon=icon('sun', 13), description='Theme, accent and density take effect immediately.') %}
+    <div class="settings-row">
+      <div class="settings-row__label">
+        <span class="t-h6">Theme</span>
+        <span class="t-meta">Light is canonical. Dark mirrors light.</span>
+      </div>
+      <div class="settings-row__control">
+        <div class="segmented" role="radiogroup" aria-label="Theme">
+          {% for choice in theme_choices %}
+            <label class="segmented__option {% if p.theme == choice %}is-active{% endif %}">
+              <input type="radio" name="theme" value="{{ choice }}"
+                     {% if p.theme == choice %}checked{% endif %}
+                     onchange="window.Pixie && Pixie.setTheme(this.value === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : this.value)" />
+              <span>{{ choice }}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-row__label">
+        <span class="t-h6">Accent</span>
+        <span class="t-meta">One accent token, four palettes.</span>
+      </div>
+      <div class="settings-row__control">
+        <div class="accent-grid" role="radiogroup" aria-label="Accent">
+          {% for choice in accent_choices %}
+            <label class="accent-swatch accent-swatch--{{ choice }} {% if p.accent == choice %}is-active{% endif %}">
+              <input type="radio" name="accent" value="{{ choice }}"
+                     {% if p.accent == choice %}checked{% endif %}
+                     onchange="window.Pixie && Pixie.setAccent(this.value)" />
+              <span class="accent-swatch__dot" aria-hidden="true"></span>
+              <span class="accent-swatch__name">{{ choice }}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-row__label">
+        <span class="t-h6">Density</span>
+        <span class="t-meta">Comfortable is the default.</span>
+      </div>
+      <div class="settings-row__control">
+        <div class="segmented" role="radiogroup" aria-label="Density">
+          {% for choice in density_choices %}
+            <label class="segmented__option {% if p.density == choice %}is-active{% endif %}">
+              <input type="radio" name="density" value="{{ choice }}"
+                     {% if p.density == choice %}checked{% endif %}
+                     onchange="window.Pixie && Pixie.setDensity(this.value)" />
+              <span>{{ choice }}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endcall %}
+
+  {% call setting_section('Behaviour', icon=icon('bolt', 13), description='Process model defaults. Apply immediately on save.') %}
+    <div class="settings-row">
+      <div class="settings-row__label">
+        <span class="t-h6">Pixie port</span>
+        <span class="t-meta">Changing requires a restart. Set <span class="mono">PIXIE_PORT</span> in <span class="mono">.env</span>.</span>
+      </div>
+      <div class="settings-row__control">
+        <input class="input mono" type="text" value="{{ port }}" readonly disabled />
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-row__label">
+        <span class="t-h6">Warm-keep cap</span>
+        <span class="t-meta">Maximum simultaneous warm tools.</span>
+      </div>
+      <div class="settings-row__control">
+        <input class="input num mono" type="number" min="1" max="64"
+               name="warm_keep_max" value="{{ p.warm_keep_max }}" />
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-row__label">
+        <span class="t-h6">Warm-keep seconds</span>
+        <span class="t-meta">Idle time before a warm tool is reaped.</span>
+      </div>
+      <div class="settings-row__control">
+        <input class="input num mono" type="number" min="0" max="86400" step="30"
+               name="warm_keep_seconds" value="{{ p.warm_keep_seconds }}" />
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-row__label">
+        <span class="t-h6">Developer mode</span>
+        <span class="t-meta">Reveals ports / PIDs, hover-prewarm, live stderr panel.</span>
+      </div>
+      <div class="settings-row__control">
+        <label class="toggle">
+          <input type="checkbox" name="developer_mode" value="1"
+                 {% if p.developer_mode %}checked{% endif %}
+                 onchange="document.body.setAttribute('data-dev-mode', this.checked ? 'true' : 'false')" />
+          <span class="toggle__track"><span class="toggle__thumb"></span></span>
+          <span class="toggle__label">{{ 'Enabled' if p.developer_mode else 'Disabled' }}</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-form__actions">
+      <button type="submit" class="btn btn--primary">{{ icon('check', 12) }} Save</button>
+      <span class="t-meta">Changes persist in <span class="mono">pixie.db</span>.</span>
+    </div>
+  {% endcall %}
+</form>
+
+{% call setting_section('Maintenance', icon=icon('refresh', 13), description='Validation, history and database housekeeping.') %}
+  <div class="settings-row">
+    <div class="settings-row__label">
+      <span class="t-h6">Re-validate every tool</span>
+      <span class="t-meta">Sequential; safe to run with tools in flight.</span>
+    </div>
+    <div class="settings-row__control settings-row__control--stack">
+      <button type="button" class="btn"
+              hx-post="/settings/revalidate-all"
+              hx-target="#revalidate-status"
+              hx-swap="innerHTML">
+        {{ icon('refresh', 12) }} Re-validate all
+      </button>
+      <div id="revalidate-status" class="revalidate-status">
+        {% include "partials/revalidate_status.html" %}
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <div class="settings-row__label">
+      <span class="t-h6">Clear run history</span>
+      <span class="t-meta">Wipes the <span class="mono">runs</span> table.</span>
+    </div>
+    <div class="settings-row__control">
+      <button type="button" class="btn btn--danger"
+              hx-post="/settings/clear-history"
+              hx-confirm="Clear run history for every tool? This cannot be undone."
+              hx-swap="none">
+        {{ icon('trash', 12) }} Clear all history
+      </button>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <div class="settings-row__label">
+      <span class="t-h6">VACUUM database</span>
+      <span class="t-meta">Reclaim free space in <span class="mono">pixie.db</span>.</span>
+    </div>
+    <div class="settings-row__control">
+      <button type="button" class="btn"
+              hx-post="/settings/vacuum"
+              hx-swap="none">
+        {{ icon('db', 12) }} VACUUM
+      </button>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <div class="settings-row__label">
+      <span class="t-h6">Disk usage</span>
+      <span class="t-meta">Per-tool venv, data, models and cache footprint.</span>
+    </div>
+    <div class="settings-row__control settings-row__control--stack">
+      <button type="button" class="btn"
+              hx-get="/settings/disk-usage-fragment"
+              hx-target="#disk-usage-mount"
+              hx-swap="innerHTML">
+        {{ icon('chart', 12) }} Show disk usage
+      </button>
+      <div id="disk-usage-mount" class="disk-usage-mount"></div>
+    </div>
+  </div>
+{% endcall %}
+
+{% call setting_section('About', icon=icon('info', 13), description='Read-only diagnostics for this Pixie process.') %}
+  <div class="about-grid">
+    <div class="about-grid__row">
+      <span class="t-eyebrow">Version</span>
+      <span class="mono">{{ version }}</span>
+    </div>
+    <div class="about-grid__row">
+      <span class="t-eyebrow">Bound to</span>
+      <span class="mono">127.0.0.1:{{ port }}</span>
+    </div>
+    <div class="about-grid__row">
+      <span class="t-eyebrow">Tools folder</span>
+      <span class="mono">{{ tools_dir }}</span>
+    </div>
+    <div class="about-grid__row">
+      <span class="t-eyebrow">Tools discovered</span>
+      <span class="mono num">{{ tool_count }}{% if broken_tool_count %} · {{ broken_tool_count }} broken{% endif %}</span>
+    </div>
+    <div class="about-grid__row">
+      <span class="t-eyebrow">Warm subprocesses</span>
+      <span class="mono num">{{ warm_count }} / {{ p.warm_keep_max }}</span>
+    </div>
+    <div class="about-grid__row">
+      <span class="t-eyebrow">Uptime</span>
+      <span class="mono num">{{ uptime_seconds }} s</span>
+    </div>
+    <div class="about-grid__row">
+      <span class="t-eyebrow">Database size</span>
+      <span class="mono num">{{ (db_size / 1024) | round(1) }} KB</span>
+    </div>
+    <div class="about-grid__row">
+      <span class="t-eyebrow">Docs</span>
+      <a href="/" rel="noopener">Pixie dashboard</a>
+    </div>
+  </div>
+{% endcall %}

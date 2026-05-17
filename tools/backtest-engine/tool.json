@@ -1,0 +1,84 @@
+{
+  "id": "backtest-engine",
+  "name": "Backtest Engine",
+  "description": "Moving-average crossover backtest on OHLC data with equity curve, per-trade log and risk metrics.",
+  "version": "0.1.0",
+  "category": "finance/quant",
+  "icon": "bar-chart-3",
+  "layout": "form",
+  "warm_keep_seconds": 300,
+  "max_memory_mb": 512,
+  "max_runtime_seconds": 60,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "ohlc_csv",
+      "type": "file",
+      "label": "OHLC CSV",
+      "description": "CSV with columns date, open, high, low, close (case-insensitive).",
+      "accept": ".csv"
+    },
+    {
+      "key": "fast_ma",
+      "type": "number",
+      "label": "Fast moving average",
+      "default": 20,
+      "min": 2,
+      "max": 200,
+      "step": 1
+    },
+    {
+      "key": "slow_ma",
+      "type": "number",
+      "label": "Slow moving average",
+      "default": 50,
+      "min": 5,
+      "max": 400,
+      "step": 1
+    },
+    {
+      "key": "initial_cash",
+      "type": "number",
+      "label": "Starting cash",
+      "default": 100000,
+      "min": 100,
+      "max": 100000000,
+      "step": 100,
+      "unit": "£"
+    },
+    {
+      "key": "commission_bps",
+      "type": "slider",
+      "label": "Commission (bps per side)",
+      "default": 5,
+      "min": 0,
+      "max": 100,
+      "step": 1
+    }
+  ],
+  "outputs": [
+    {
+      "key": "equity_chart",
+      "type": "chart_line",
+      "label": "Equity curve vs buy-and-hold"
+    },
+    {
+      "key": "trades_table",
+      "type": "table",
+      "label": "Per-trade log",
+      "columns": [
+        {"key": "entry_date", "label": "Entry date", "type": "string"},
+        {"key": "exit_date", "label": "Exit date", "type": "string"},
+        {"key": "entry_price", "label": "Entry", "type": "number"},
+        {"key": "exit_price", "label": "Exit", "type": "number"},
+        {"key": "pnl", "label": "P&L (£)", "type": "number"},
+        {"key": "return_pct", "label": "Return (%)", "type": "number"}
+      ]
+    },
+    {
+      "key": "metrics",
+      "type": "kv",
+      "label": "Performance metrics"
+    }
+  ]
+}

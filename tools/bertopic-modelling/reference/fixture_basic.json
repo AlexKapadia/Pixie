@@ -1,0 +1,12 @@
+{
+  "name": "synthetic four-topic corpus",
+  "source": "built-in sample (finance, smartphones, biology, football)",
+  "inputs": {
+    "dataset_csv": null,
+    "text_column": "text",
+    "num_topics": 4
+  },
+  "expected_outputs": {},
+  "tolerance": {},
+  "tags": ["topic-model"]
+}

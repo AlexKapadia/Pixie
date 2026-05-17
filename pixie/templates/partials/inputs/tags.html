@@ -1,0 +1,64 @@
+{%- from "_macros.html" import field_open, field_close -%}
+{{ field_open(spec, field_id) }}
+<div class="field__control tag-input"
+     x-data='{
+       tags: (Array.isArray({{ initial_json }}) ? {{ initial_json }} : []),
+       suggestions: {{ spec.suggestions | tojson }},
+       draft: "",
+       openSugs: false,
+       add(raw) {
+         const t = (raw || this.draft).trim().replace(/,$/, "").trim();
+         if (!t || this.tags.includes(t)) { this.draft = ""; return; }
+         this.tags.push(t);
+         this.draft = "";
+         values[{{ spec.key | tojson }}] = this.tags.slice();
+       },
+       remove(i) {
+         this.tags.splice(i, 1);
+         values[{{ spec.key | tojson }}] = this.tags.slice();
+       },
+       onKey(e) {
+         if (e.key === "Enter" || e.key === ",") { e.preventDefault(); this.add(); }
+         else if (e.key === "Backspace" && !this.draft && this.tags.length) { this.remove(this.tags.length - 1); }
+       },
+       get filteredSugs() {
+         const q = this.draft.toLowerCase();
+         return this.suggestions.filter(s => !this.tags.includes(s) && (!q || s.toLowerCase().includes(q))).slice(0, 8);
+       }
+     }'
+     x-init="values[{{ spec.key | tojson }}] = tags.slice()"
+     @click.outside="openSugs = false">
+  <div class="tag-input__field input" @click="$refs.entry.focus()">
+    <template x-for="(t, i) in tags" :key="i + ':' + t">
+      <span class="tag-input__chip">
+        <span x-text="t"></span>
+        <button type="button" class="tag-input__x" aria-label="Remove tag" @click.prevent="remove(i)">
+          <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m4 4 8 8M12 4l-8 8"/></svg>
+        </button>
+      </span>
+    </template>
+    <input type="text"
+           x-ref="entry"
+           id="{{ field_id }}"
+           class="tag-input__entry mono"
+           x-model="draft"
+           @keydown="onKey"
+           @focus="openSugs = true"
+           @blur="add(); openSugs = false"
+           placeholder="Add a tag…"
+           autocomplete="off" />
+  </div>
+  <div class="tag-input__sugs popover"
+       x-show="openSugs && filteredSugs.length"
+       x-cloak>
+    <template x-for="s in filteredSugs" :key="s">
+      <button type="button" class="popover__item" @mousedown.prevent="add(s)">
+        <span x-text="s"></span>
+      </button>
+    </template>
+  </div>
+  <input type="hidden" name="{{ spec.key }}"
+         data-json-type="json"
+         :value="JSON.stringify(tags)" />
+</div>
+{{ field_close(spec) }}

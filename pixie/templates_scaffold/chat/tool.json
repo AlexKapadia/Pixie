@@ -1,0 +1,29 @@
+{
+  "id": "{{TOOL_ID}}",
+  "name": "{{TOOL_NAME}}",
+  "description": "{{DESCRIPTION}}",
+  "version": "0.1.0",
+  "category": "chat",
+  "icon": "message-circle",
+  "layout": "chat",
+  "warm_keep_seconds": 600,
+  "max_memory_mb": 512,
+  "max_runtime_seconds": 60,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "messages",
+      "type": "json",
+      "label": "Conversation",
+      "description": "The full conversation as a list of {role, content} entries."
+    }
+  ],
+  "outputs": [
+    {
+      "key": "reply",
+      "type": "stream_text",
+      "label": "Reply",
+      "streaming": true
+    }
+  ]
+}

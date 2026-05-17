@@ -1,0 +1,36 @@
+{
+  "id": "{{TOOL_ID}}",
+  "name": "{{TOOL_NAME}}",
+  "description": "{{DESCRIPTION}}",
+  "version": "0.1.0",
+  "category": "media",
+  "icon": "terminal",
+  "layout": "form",
+  "warm_keep_seconds": 300,
+  "max_memory_mb": 512,
+  "max_runtime_seconds": 120,
+  "provides_file_endpoint": true,
+  "secrets": [],
+  "inputs": [
+    {
+      "key": "source",
+      "type": "file",
+      "label": "Source file",
+      "description": "File to pipe through the wrapped CLI."
+    },
+    {
+      "key": "extra_args",
+      "type": "text",
+      "label": "Extra arguments",
+      "description": "Optional space-separated arguments appended to the CLI invocation.",
+      "default": ""
+    }
+  ],
+  "outputs": [
+    {
+      "key": "result",
+      "type": "file",
+      "label": "Output file"
+    }
+  ]
+}

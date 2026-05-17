@@ -1,0 +1,14 @@
+{
+  "name": "five bodies seed 42",
+  "source": "deterministic seed",
+  "inputs": {
+    "n_bodies": 5,
+    "mass_range": 2.0,
+    "time_steps": 500,
+    "dt": 0.005,
+    "seed": 42
+  },
+  "expected_outputs": {},
+  "tolerance": {},
+  "tags": ["n-body"]
+}

@@ -1,0 +1,22 @@
+{%- from "_macros.html" import show_if_attr, field_close -%}
+<div class="field field--checkbox"
+     data-key="{{ spec.key }}"
+     {{ show_if_attr(spec) }}>
+  <label class="checkbox" for="{{ field_id }}">
+    <input type="checkbox"
+           class="checkbox__box"
+           id="{{ field_id }}"
+           name="{{ spec.key }}"
+           data-json-type="boolean"
+           x-model="values[{{ spec.key | tojson }}]"
+           {% if value %}checked{% endif %}
+           {% if spec.required %}required aria-required="true"{% endif %} />
+    <span class="checkbox__visual" aria-hidden="true">
+      <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8.5 3.5 3.5L13 5"/></svg>
+    </span>
+    <span class="checkbox__text">
+      <span class="field__label" style="margin:0;">{{ spec.label }}{% if spec.required %}<span class="field__req" aria-hidden="true">*</span>{% endif %}</span>
+      {% if spec.description %}<span class="field__hint">{{ spec.description }}</span>{% endif %}
+    </span>
+  </label>
+</div>

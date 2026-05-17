@@ -1,0 +1,18 @@
+[project]
+name = "open-meteo-forecast"
+version = "0.1.0"
+description = "Open-Meteo weather forecast for any geographic point."
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
+  "python-dotenv>=1.0",
+  "httpx>=0.27",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/open_meteo_forecast"]

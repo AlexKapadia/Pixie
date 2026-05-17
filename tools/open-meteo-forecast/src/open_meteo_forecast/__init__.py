@@ -1,0 +1,1 @@
+"""Open-Meteo forecast package."""
