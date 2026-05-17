@@ -47,6 +47,9 @@ artefacts/
 .coverage
 htmlcov/
 
+# Test suite lives in the sibling Pixie-tests repo
+tests/
+
 # Docs site (Astro Starlight)
 docs-site/node_modules/
 docs-site/dist/

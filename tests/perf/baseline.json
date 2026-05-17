@@ -1,7 +1,0 @@
-{
-  "cold_spawn": 2500.0,
-  "warm_run_roundtrip": 100.0,
-  "sidebar_render": 200.0,
-  "validator_full_pass": 13000.0,
-  "pixie_startup": 800.0
-}
