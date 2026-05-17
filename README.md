@@ -22,7 +22,20 @@ https://github.com/AlexKapadia/Pixie/raw/main/Pixie.mp4
 
 Pixie is one local web app. Point it at a `tools/` folder and it scans, validates, and serves every tool in there with a real UI: forms, charts, maps, tables, audio, video, the lot. Each tool runs in its own `uv` virtualenv as a subprocess that spins up on click and shuts down when idle.
 
-You don't add tools through the dashboard. You add them by talking to Claude Code. A sentence like *"add a Pixie tool that converts currencies"* triggers a skill that writes the schema, the FastAPI handler, the dependencies, runs the validator end-to-end, and only claims success if every check passes. Refresh the page and the tool shows up with a green dot.
+You don't add tools through the dashboard. You add them by talking to Claude Code, and you bring whatever you've already got:
+
+* a description in plain English (`add-tool-from-description`)
+* a GitHub repo (`add-tool-from-repo`)
+* a Python script on disk (`wrap-local-script`)
+* a Jupyter notebook (`add-tool-from-notebook`)
+* a Streamlit or Gradio app (`convert-streamlit-app`, `convert-gradio-app`)
+* a CLI binary like `ffmpeg`, `yt-dlp`, `pandoc` (`add-tool-from-cli-command`)
+* an OpenAPI / Swagger spec (`add-tool-from-openapi-spec`)
+* **an Excel `.xlsx` model**, formulas and all (`add-tool-from-excel-model`)
+* **an academic paper PDF or arXiv link** (`add-tool-from-paper`, which also generates reference fixtures from the paper's reported numbers)
+* a detailed model spec when there's no paper or code (`implement-model-from-spec`)
+
+Each skill writes the schema, the FastAPI handler, the dependencies, runs the validator end-to-end, and only claims success if every check passes. Refresh the page and the tool shows up with a green dot.
 
 Everything stays on `127.0.0.1`. No accounts. No telemetry. No cloud sync. Your `.env` files stay in your tool folders.
 
@@ -41,10 +54,22 @@ Requires Python 3.12 and [uv](https://docs.astral.sh/uv/). Works on macOS, Linux
 
 ## Add your first tool
 
-In Claude Code, inside the Pixie repo, say:
+In Claude Code, inside the Pixie repo, say whichever fits what you've got:
 
 ```
 Add a Pixie tool that fetches a stock ticker and runs a Monte Carlo on it.
+```
+```
+Add a Pixie tool from https://github.com/some-org/cool-model
+```
+```
+Wrap my Excel model at ./quant/black_litterman.xlsx as a Pixie tool.
+```
+```
+Implement this paper as a Pixie tool: https://arxiv.org/abs/2310.06770
+```
+```
+Add a Pixie tool from this notebook: ./experiments/forecasting.ipynb
 ```
 
 Claude picks an id, writes `tool.json`, writes `main.py`, runs `uv sync`, spawns the subprocess, POSTs sample input, checks the response conforms to the declared output schema, then reports back. If anything fails, the tool does not appear in the sidebar.
