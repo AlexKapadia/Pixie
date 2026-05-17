@@ -35,7 +35,10 @@ jobs:
           cache-dependency-path: docs-site/package-lock.json
 
       - name: Install
-        run: npm ci
+        # Use `npm install` (not `npm ci`) because the lockfile may be
+        # generated on Windows and missing platform-specific optional deps
+        # like @rollup/rollup-linux-x64-gnu. See npm/cli#4828.
+        run: npm install --no-audit --no-fund
 
       - name: Build
         run: npm run build
