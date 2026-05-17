@@ -120,52 +120,51 @@ kbd {
   filter: brightness(0) invert(1);
 }
 
-/* Prettier theme-select dropdown in the header. Scoped tightly to
-   starlight-theme-select so we don't restyle every <select> on the page
-   (which previously pushed the dropdown into the logo area). */
-starlight-theme-select > label > select {
-  background-color: transparent;
-  color: var(--sl-color-text);
-  border: 1px solid var(--sl-color-hairline);
-  border-radius: 8px;
-  padding: 0.2rem 1.4rem 0.2rem 0.5rem;
-  font-family: var(--sl-font);
-  font-size: 0.8rem;
-  font-weight: 500;
+/* Theme picker: icon-only. Hide the visible select text and the down-caret
+   so only Starlight's sun/moon/laptop icon shows in the header. The native
+   <select> remains clickable for the dropdown — text is invisible but
+   options in the popup are restored. */
+starlight-theme-select label {
+  width: 1.75rem;
+  padding: 0;
+  justify-content: center;
+}
+
+starlight-theme-select .caret {
+  display: none;
+}
+
+starlight-theme-select select {
+  width: 1.75rem;
+  padding: 0.5rem;
+  margin: 0;
+  color: transparent;
+  background: transparent;
+  border: 0;
+  font-size: 0;
   cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: linear-gradient(
-      45deg,
-      transparent 50%,
-      var(--sl-color-text-accent) 50%
-    ),
-    linear-gradient(135deg, var(--sl-color-text-accent) 50%, transparent 50%);
-  background-position:
-    calc(100% - 9px) 50%,
-    calc(100% - 5px) 50%;
-  background-size: 4px 4px, 4px 4px;
-  background-repeat: no-repeat;
-  transition:
-    border-color 140ms ease,
-    box-shadow 140ms ease,
-    background-color 140ms ease;
+  border-radius: 8px;
+  transition: background-color 140ms ease;
 }
 
-starlight-theme-select > label > select:hover {
-  border-color: var(--sl-color-accent);
+starlight-theme-select select:hover,
+starlight-theme-select select:focus-visible {
   background-color: var(--sl-color-accent-low);
-}
-
-starlight-theme-select > label > select:focus,
-starlight-theme-select > label > select:focus-visible {
   outline: none;
-  border-color: var(--sl-color-accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
 }
 
-/* The <option> popup is OS-rendered; we can only hint colours. */
-:root[data-theme="dark"] starlight-theme-select > label > select option {
-  background-color: #1e1b2e;
+starlight-theme-select .label-icon {
+  font-size: 1rem;
+  inset-inline-start: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Restore readable text in the OS-rendered options popup. */
+starlight-theme-select select option {
   color: var(--sl-color-text);
+  background-color: var(--sl-color-bg-nav);
+  font-size: 0.875rem;
+}
+:root[data-theme="dark"] starlight-theme-select select option {
+  background-color: #1e1b2e;
 }
