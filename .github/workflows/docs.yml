@@ -31,13 +31,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: docs-site/package-lock.json
 
       - name: Install
-        # Use `npm install` (not `npm ci`) because the lockfile may be
-        # generated on Windows and missing platform-specific optional deps
-        # like @rollup/rollup-linux-x64-gnu. See npm/cli#4828.
+        # No `npm ci` and no lockfile cache: a Windows-generated lockfile
+        # is missing Linux-specific optional Rollup deps (npm/cli#4828),
+        # and the lockfile is gitignored for that reason.
         run: npm install --no-audit --no-fund
 
       - name: Build

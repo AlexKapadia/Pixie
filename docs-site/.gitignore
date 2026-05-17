@@ -6,3 +6,7 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Windows-generated lockfile omits Linux-specific optional Rollup deps;
+# we let CI generate its own. See npm/cli#4828.
+package-lock.json
