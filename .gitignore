@@ -1,0 +1,14 @@
+# Docs site build artefacts
+docs-site/node_modules/
+docs-site/dist/
+docs-site/.astro/
+docs-site/package-lock.json
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs
+*.log

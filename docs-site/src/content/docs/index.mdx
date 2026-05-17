@@ -1,0 +1,158 @@
+---
+title: Pixie
+description: A local-first dashboard for your personal tools and models. Add tools by talking to Claude Code.
+template: splash
+hero:
+  tagline: A local-first dashboard for your personal tools and models. Add tools by talking to Claude Code.
+  image:
+    file: ../../assets/pixie-logo.png
+  actions:
+    - text: Install in two minutes
+      link: /Pixie/start/install/
+      icon: rocket
+      variant: primary
+    - text: Browse the tool format
+      link: /Pixie/build/tool-json/
+      icon: open-book
+    - text: View on GitHub
+      link: https://github.com/alexanderkapadia/pixie
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard, Tabs, TabItem, Code } from "@astrojs/starlight/components";
+
+## One dashboard. Every tool you've ever written.
+
+Pixie is a single local web app that scans a `tools/` folder, lists every tool
+it finds in a sidebar, and renders a schema-driven UI for each one. Each tool
+runs in its own isolated `uv` virtual environment as a subprocess that spins up
+on click and shuts down when idle.
+
+You don't install tools through the UI. You add them in Claude Code with one
+of the shipped skills, and they appear in the sidebar after the validator
+confirms the contract is honoured.
+
+<CardGrid>
+  <Card title="Local-first" icon="seti:lock">
+    Everything runs on `127.0.0.1`. No accounts, no telemetry, no cloud sync,
+    no remote access. Your `.env` files stay in your tool folders.
+  </Card>
+  <Card title="Schema-driven UI" icon="seti:json">
+    A `tool.json` file declares inputs, outputs, layout, and secrets. Pixie
+    renders the form, the output panels, charts, maps, and tables from the
+    schema. No frontend code per tool.
+  </Card>
+  <Card title="Isolated venvs" icon="seti:python">
+    Every tool gets its own `.venv` managed by [uv](https://docs.astral.sh/uv).
+    Heavy dependencies (PyTorch, BERTopic, Whisper) never poison your base
+    Python.
+  </Card>
+  <Card title="Claude Code skills" icon="puzzle">
+    Skills like `add-tool-from-repo`, `add-tool-from-description`,
+    `debug-tool`, and `update-tool` write the scaffolding for you and run the
+    validator end-to-end before claiming success.
+  </Card>
+  <Card title="Validator-first" icon="approve-check">
+    Every tool passes 11 deterministic checks — folder structure, schema
+    parsing, sample-input run, output conformance, clean shutdown — before
+    appearing in the sidebar with a green dot.
+  </Card>
+  <Card title="Warm-keep" icon="rocket">
+    Recently-used tools stay warm for 5 minutes so the second click is
+    instant. A global LRU cap keeps memory bounded.
+  </Card>
+</CardGrid>
+
+## Add a tool in one sentence
+
+```text title="In Claude Code"
+Add a Pixie tool that converts currencies using the Frankfurter API
+```
+
+That sentence triggers the `add-tool-from-description` skill, which:
+
+1. Picks a kebab-case `id` and a human-readable name.
+2. Writes `tool.json` with a `select` for the source currency, another for the
+   target, a `number` for the amount, and an output `number` formatted as
+   currency.
+3. Writes `pyproject.toml` and `main.py` (a FastAPI app honouring the
+   `/schema` + `/healthz` + `/run` contract).
+4. Runs `uv sync` to build the `.venv`.
+5. Runs `uv run pixie validate currency-converter` — 11 checks, including
+   spawning the tool and POSTing sample input.
+6. Surfaces the full report. Only if `overall: pass` does it claim success.
+
+Refresh the dashboard and the tool appears in the sidebar with a green dot.
+
+## What tools can do
+
+<div style="overflow-x:auto">
+
+| Inputs                                                                       | Outputs                                                                                  |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| text, textarea, number, slider                                               | text, markdown, number, boolean                                                          |
+| select, multiselect, checkbox, toggle, radio                                 | table, kv                                                                                |
+| date, time, datetime, date\_range                                            | charts (line, bar, scatter, area, pie, histogram, boxplot, heatmap, candlestick, radar, sankey, treemap, network) |
+| file, image, audio                                                           | maps (points, heatmap, choropleth, polygons, route)                                      |
+| colour, json, code, markdown, tags                                           | image, image\_grid, image\_compare                                                       |
+| autocomplete, table                                                          | audio, video, latex, code, diff                                                          |
+| map (point, bbox, polygon, multipoint)                                       | tree, timeline, gantt, progress, log                                                     |
+| hidden                                                                       | stream\_text, file                                                                       |
+
+</div>
+
+Tools can mix any combination. The dashboard renders the right UI from the
+schema. See [Input types](/Pixie/build/inputs/) and [Output types](/Pixie/build/outputs/)
+for the full reference.
+
+## Pick your path
+
+<CardGrid>
+  <LinkCard
+    title="Install & first run"
+    href="/Pixie/start/install/"
+    description="Clone, uv sync, uv run pixie, open localhost:7860."
+  />
+  <LinkCard
+    title="Add your first tool"
+    href="/Pixie/start/first-tool/"
+    description="Use Claude Code to scaffold, validate, and ship a tool in one sentence."
+  />
+  <LinkCard
+    title="Tool authoring guide"
+    href="/Pixie/build/anatomy/"
+    description="Hand-write a tool from scratch — every field, every input, every output."
+  />
+  <LinkCard
+    title="Claude Code skills"
+    href="/Pixie/skills/overview/"
+    description="Every shipped skill, its triggers, what it does, and what it refuses."
+  />
+  <LinkCard
+    title="Tools cookbook"
+    href="/Pixie/cookbook/"
+    description="Catalog of tools that ship with Pixie — lorenz, n-body, whisper, RAG, and more."
+  />
+  <LinkCard
+    title="Contribute"
+    href="/Pixie/contributing/overview/"
+    description="Dev setup, code style, and how to add a new input or output type."
+  />
+</CardGrid>
+
+## What Pixie is not
+
+Pixie is not hosted, not a SaaS, not a marketplace, not a deployment platform.
+It does not authenticate users. It does not synchronise to the cloud. It is
+not a generic app platform — it is for small tools and models with simple
+input/output contracts.
+
+Pixie does not ingest, install, or modify tools from inside its own UI.
+Adding tools is done externally in Claude Code using the skills shipped in
+this repo. From Pixie's perspective, tools simply appear on disk in the
+`tools/` folder and it renders whatever is there.
+
+---
+
+<small>MIT-licensed. Built with Python 3.12, FastAPI, htmx, Alpine.js, Tailwind, and a healthy dose of stubborn opinions about scope.</small>
