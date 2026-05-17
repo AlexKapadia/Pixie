@@ -1,1 +1,0 @@
-"""Geospatial KDE heatmap package."""

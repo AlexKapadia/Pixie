@@ -1,1 +1,0 @@
-"""Graph algorithms playground package."""

@@ -1,1 +1,0 @@
-"""Lotka-Volterra simulator package."""

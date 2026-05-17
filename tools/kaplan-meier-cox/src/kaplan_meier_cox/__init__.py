@@ -1,1 +1,0 @@
-"""Kaplan-Meier + Cox package."""

@@ -45,7 +45,7 @@
         {% for run in recent_runs %}
           <button type="button"
                   class="popover__item"
-                  hx-get="/tool/{{ tool.tool_id }}/runs/{{ run.id }}"
+                  hx-get="/tool/{{ tool.tool_id }}/runs/{{ run.run_id }}"
                   hx-target="#output-panel"
                   hx-swap="innerHTML">
             {% if run.status == 'ok' %}
@@ -55,8 +55,8 @@
             {% else %}
               <span class="dot dot--dormant" aria-hidden="true"></span>
             {% endif %}
-            <span class="mono" style="flex:1;">{{ run.id[:8] }}</span>
-            <span class="t-meta">{{ run.when }}</span>
+            <span class="mono" style="flex:1;">{{ run.run_id[:8] }}</span>
+            <span class="t-meta">{{ run.started_at[11:19] if run.started_at else '' }}</span>
           </button>
         {% endfor %}
       {% else %}

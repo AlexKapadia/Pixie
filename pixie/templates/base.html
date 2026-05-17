@@ -6,6 +6,20 @@
     <title>{% block title %}Pixie{% endblock %}</title>
     <link rel="icon" type="image/png" href="/static/pixie-logo.png" />
 
+    {# No-flash theme bootstrap: apply localStorage theme before any CSS paints, so
+       client-side toggle survives full page navigations even though the toggle
+       does not persist to the server. Must stay inline and ahead of the stylesheet. #}
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("pixie.theme");
+          if (t === "light" || t === "dark") {
+            document.documentElement.setAttribute("data-theme", t);
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     {# Inter Tight + JetBrains Mono per the design package. #}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -49,6 +63,12 @@
     <script defer src="https://unpkg.com/htmx-ext-response-targets@2.0.4" crossorigin="anonymous"></script>
     <script defer src="https://unpkg.com/htmx-ext-loading-states@2.0.1" crossorigin="anonymous"></script>
 
+    {# Pixie helpers MUST load before Alpine — Alpine evaluates x-data="Pixie.fileDrop()"
+       during its own defer-execution (before DOMContentLoaded), so `Pixie` must
+       already be defined on window. Loading order is execution order for defer scripts. #}
+    <script src="/static/pixie.js?v={{ static_v }}" defer></script>
+    <script src="/static/pixie-inputs.js?v={{ static_v }}" defer></script>
+
     {# Alpine.js. #}
     <script defer src="https://unpkg.com/alpinejs@3.15.8/dist/cdn.min.js" crossorigin="anonymous"></script>
 
@@ -80,9 +100,6 @@
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/python/python.min.js" crossorigin="anonymous"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/sql/sql.min.js" crossorigin="anonymous"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js" crossorigin="anonymous"></script>
-
-    <script src="/static/pixie.js" defer></script>
-    <script src="/static/pixie-inputs.js" defer></script>
   </head>
   <body class="pixie"
         hx-ext="json-enc, response-targets, loading-states"

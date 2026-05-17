@@ -1,31 +1,10 @@
-# Python
-__pycache__/
-*.pyc
-*.py[cod]
-*.egg-info/
-.venv/
-dist/
-build/
+# Docs site build artefacts
+docs-site/node_modules/
+docs-site/dist/
+docs-site/.astro/
+docs-site/package-lock.json
 
-# Caches
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-
-# Per-tool artefacts
-tools/*/.venv/
-tools/*/data/
-tools/*/.env
-tools/*/__pycache__/
-
-# Pixie runtime database
-pixie.db
-pixie.db-journal
-pixie.db-wal
-pixie.db-shm
-
-# Environment + editor + OS
-.env
+# OS / editors
 .DS_Store
 Thumbs.db
 .idea/
@@ -34,24 +13,35 @@ Thumbs.db
 # Logs
 *.log
 
-# Orchestrator-only directories
-.design_pkg/
+# --- Pixie: infrastructure only on main ----------------------------------
+# Never push run outputs, datasets, model weights, secrets, or local state.
+artefacts/
+pixie.db
+pixie.db-journal
+pixie.db-wal
+pixie.db-shm
+.env
+.env.*
+!.env.example
+
+# Tools directory is local-only. Fresh clones start empty so contributors
+# build their own. .gitkeep preserves the directory.
+tools/*
+!tools/.gitkeep
+
+# Python build/cache
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.cache/
 .build/
 
-# Local-first output store (Wave 2 — artefact persistence)
-artefacts/
+# Playwright / test scratch
+.playwright-verify/
+node_modules/
 
-# Test/dev artefacts
-.benchmarks/
-.cache/
-.coverage
-htmlcov/
-
-# Test suite lives in the sibling Pixie-tests repo
-tests/
-
-# Docs site (Astro Starlight)
-docs-site/node_modules/
-docs-site/dist/
-docs-site/.astro/
-
+# Top-level Python venv
+.venv/
