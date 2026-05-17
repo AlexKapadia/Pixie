@@ -12,7 +12,7 @@ import { Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 1. **Clone and install dev deps.**
 
    ```bash
-   git clone https://github.com/alexanderkapadia/pixie.git
+   git clone https://github.com/AlexKapadia/Pixie.git
    cd pixie
    uv sync --extra dev
    ```

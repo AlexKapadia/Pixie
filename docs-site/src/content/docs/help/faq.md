@@ -145,6 +145,6 @@ want them fully isolated.
 
 ## How do I report a bug or request a feature?
 
-[Open an issue](https://github.com/alexanderkapadia/Pixie/issues). Read
+[Open an issue](https://github.com/AlexKapadia/Pixie/issues). Read
 [Out of scope](/Pixie/contributing/out-of-scope/) first for things we
 won't accept.

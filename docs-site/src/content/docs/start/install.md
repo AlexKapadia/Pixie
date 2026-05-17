@@ -51,7 +51,7 @@ uv python install 3.12
 1. **Clone the repo.**
 
    ```bash
-   git clone https://github.com/alexanderkapadia/pixie.git
+   git clone https://github.com/AlexKapadia/Pixie.git
    cd pixie
    ```
 

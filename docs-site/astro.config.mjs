@@ -22,7 +22,7 @@ export default defineConfig({
       },
       editLink: {
         baseUrl:
-          "https://github.com/AlexKapadia/Pixie/edit/main/docs-site/",
+          "https://github.com/AlexKapadia/Pixie/edit/docs/docs-site/",
       },
       customCss: ["./src/styles/custom.css"],
       head: [
