@@ -1,5 +1,6 @@
+{%- set _ps = persisted_settings or persisted(request) -%}
 <!doctype html>
-<html data-theme="{{ theme | default('light') }}" lang="en">
+<html data-theme="{{ (_ps.theme if _ps else None) or theme | default('light') }}" lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -26,7 +27,7 @@
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
 
-    <link rel="stylesheet" href="/static/pixie.css" />
+    <link rel="stylesheet" href="/static/pixie.css?v={{ static_v }}" />
 
     {# Leaflet CSS — pinned. #}
     <link rel="stylesheet"

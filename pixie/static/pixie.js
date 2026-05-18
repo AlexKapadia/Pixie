@@ -117,6 +117,23 @@
     Pixie.setTheme(Pixie.isDark() ? "light" : "dark");
   };
 
+  // Persist a single Appearance preference (theme / accent / density) to the
+  // server immediately. Without this the picker only updates the DOM, and the
+  // next htmx swap re-applies the stale server value via applyPersistedSettings.
+  Pixie.persistPreference = function (key, value) {
+    if (!key || value == null) return;
+    var body = "key=" + encodeURIComponent(key) + "&value=" + encodeURIComponent(value);
+    try {
+      fetch("/settings/preference", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body,
+        credentials: "same-origin",
+        keepalive: true,
+      });
+    } catch (e) {}
+  };
+
   // --- swap-hook registrar -------------------------------------------------
   var swapHandlers = [];
   Pixie.initOnSwap = function (handler) {

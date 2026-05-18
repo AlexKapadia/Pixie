@@ -2141,10 +2141,16 @@ body.pixie[data-density="airy"]         { font-size: 14px; }
    ============================================================= */
 
 .pixie .settings-shell {
-  display: block;
-  max-width: 880px;
-  margin: 0 auto;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  width: 100%;
   padding: 18px 22px 60px;
+}
+.pixie .settings-shell > * {
+  max-width: 880px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .pixie .settings-section {

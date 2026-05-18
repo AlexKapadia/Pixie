@@ -282,6 +282,43 @@ def create_app() -> FastAPI:
     templates.env.globals["render_outputs"] = render_outputs
     templates.env.globals["render_input"] = render_input
     templates.env.globals["render_output"] = render_output
+
+    # Cache-bust query for /static/*.js — derived from the latest mtime of any
+    # JS file under settings.static_dir, so edits force browsers to refetch.
+    def _compute_static_v() -> str:
+        try:
+            latest = 0.0
+            for pattern in ("*.js", "*.css"):
+                for p in settings.static_dir.glob(pattern):
+                    latest = max(latest, p.stat().st_mtime)
+            return str(int(latest))
+        except Exception:
+            return "0"
+    templates.env.globals["static_v"] = _compute_static_v()
+
+    # Theme/accent/density and developer_mode live in the DB and must be
+    # applied on every page render — not just /settings — otherwise sidebar
+    # navigation re-injects a stale "light" payload that overrides the user's
+    # choice on every htmx swap. Middleware loads once per HTML/HTMX request
+    # and stashes on request.state for base.html to read.
+    @app.middleware("http")
+    async def _inject_persisted_settings(request: Request, call_next):
+        path = request.url.path
+        if path.startswith(("/static/", "/api/")):
+            return await call_next(request)
+        try:
+            from pixie.routes.settings import load_global_settings
+            request.state.persisted_settings = await load_global_settings(settings)
+        except Exception:
+            request.state.persisted_settings = None
+        return await call_next(request)
+
+    def _persisted(request: Request | None) -> dict:
+        if request is None:
+            return {}
+        return getattr(getattr(request, "state", None), "persisted_settings", None) or {}
+    templates.env.globals["persisted"] = _persisted
+
     app.state.templates = templates
 
     app.include_router(dashboard.router)

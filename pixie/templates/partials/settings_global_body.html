@@ -21,7 +21,7 @@
                    data-theme-preview="{{ tid }}">
               <input type="radio" name="theme" value="{{ tid }}"
                      {% if p.theme == tid %}checked{% endif %}
-                     onchange="window.Pixie && Pixie.setTheme(this.value === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : this.value)" />
+                     onchange="if(window.Pixie){Pixie.setTheme(this.value === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : this.value);Pixie.persistPreference('theme', this.value);}" />
               <span class="theme-card__swatch" aria-hidden="true">
                 <span class="theme-card__bg"></span>
                 <span class="theme-card__panel"></span>
@@ -46,7 +46,7 @@
             <label class="accent-swatch accent-swatch--{{ choice }} {% if p.accent == choice %}is-active{% endif %}">
               <input type="radio" name="accent" value="{{ choice }}"
                      {% if p.accent == choice %}checked{% endif %}
-                     onchange="window.Pixie && Pixie.setAccent(this.value)" />
+                     onchange="if(window.Pixie){Pixie.setAccent(this.value);Pixie.persistPreference('accent', this.value);}" />
               <span class="accent-swatch__dot" aria-hidden="true"></span>
               <span class="accent-swatch__name">{{ choice }}</span>
             </label>
@@ -66,7 +66,7 @@
             <label class="segmented__option {% if p.density == choice %}is-active{% endif %}">
               <input type="radio" name="density" value="{{ choice }}"
                      {% if p.density == choice %}checked{% endif %}
-                     onchange="window.Pixie && Pixie.setDensity(this.value)" />
+                     onchange="if(window.Pixie){Pixie.setDensity(this.value);Pixie.persistPreference('density', this.value);}" />
               <span>{{ choice }}</span>
             </label>
           {% endfor %}
