@@ -114,7 +114,9 @@
   };
 
   Pixie.toggleTheme = function () {
-    Pixie.setTheme(Pixie.isDark() ? "light" : "dark");
+    var next = Pixie.isDark() ? "light" : "dark";
+    Pixie.setTheme(next);
+    Pixie.persistPreference("theme", next);
   };
 
   // Persist a single Appearance preference (theme / accent / density) to the

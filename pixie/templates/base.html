@@ -14,7 +14,9 @@
       (function () {
         try {
           var t = localStorage.getItem("pixie.theme");
-          if (t === "light" || t === "dark") {
+          // Accept any registered theme id (alnum + dash). Invalid values are
+          // dropped; valid ones win over the SSR data-theme until pixie.js boots.
+          if (t && /^[a-z0-9-]{1,40}$/i.test(t)) {
             document.documentElement.setAttribute("data-theme", t);
           }
         } catch (e) {}
@@ -104,17 +106,17 @@
   </head>
   <body class="pixie"
         hx-ext="json-enc, response-targets, loading-states"
-        data-density="{{ (persisted_settings.density if persisted_settings else None) or 'comfortable' }}"
-        data-dev-mode="{{ 'true' if developer_mode else 'false' }}">
+        data-density="{{ (_ps.density if _ps else None) or 'comfortable' }}"
+        data-dev-mode="{{ 'true' if (_ps.developer_mode if _ps else developer_mode) else 'false' }}">
     <a href="#pixie-main-content" class="pixie-skip-link">Skip to main content</a>
     <div id="pixie-toasts" aria-live="polite" aria-atomic="false"></div>
     {# Server-rendered settings payload — applied by Pixie.applyPersistedSettings on boot
        and on every htmx swap so theme/accent/density follow the db, not just localStorage. #}
     <script id="pixie-settings-payload" type="application/json">{{ {
-      'theme': (persisted_settings.theme if persisted_settings else theme) or 'light',
-      'accent': (persisted_settings.accent if persisted_settings else 'indigo'),
-      'density': (persisted_settings.density if persisted_settings else 'comfortable'),
-      'developer_mode': (persisted_settings.developer_mode if persisted_settings else (developer_mode if developer_mode is defined else false))
+      'theme': (_ps.theme if _ps else None) or (theme if theme is defined else None) or 'light',
+      'accent': (_ps.accent if _ps else None) or 'indigo',
+      'density': (_ps.density if _ps else None) or 'comfortable',
+      'developer_mode': (_ps.developer_mode if _ps else (developer_mode if developer_mode is defined else false))
     } | tojson }}</script>
     {# Quick-switcher tool payload, consumed by pixie.js. Re-injected on sidebar swaps. #}
     {%- set _qs_tools = [] -%}
