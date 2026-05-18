@@ -442,10 +442,12 @@ async def _recent_artefact_rows(
 
     import sqlite3
 
+    from pixie import db as _db
+
     def _query() -> list[dict[str, object]]:
         try:
-            with sqlite3.connect(db_path) as conn:
-                conn.row_factory = sqlite3.Row
+            conn = _db.connect(db_path)
+            try:
                 cur = conn.execute(
                     "SELECT created_at, output_key, filename, size_bytes, rel_path "
                     "FROM artefacts WHERE tool_id = ? "
@@ -453,6 +455,8 @@ async def _recent_artefact_rows(
                     (tool_id, limit),
                 )
                 return [dict(row) for row in cur.fetchall()]
+            finally:
+                conn.close()
         except sqlite3.OperationalError:
             return []
 
@@ -629,6 +633,105 @@ def sweep(
         "referenced by these run rows.[/dim]"
     )
 
+    # Reconcile orphaned archived flags (4.1).
+    cleared = _sweep_reconcile_archived(settings)
+    if cleared:
+        console.print(
+            f"[yellow]sweep: cleared {cleared} orphaned "
+            f"archived flag(s).[/yellow]"
+        )
+
+
+def _sweep_reconcile_archived(settings) -> int:
+    """For every tool_state row with archived=1, if the tool folder exists
+    on disk AND there is no archive_log row, clear the archived flag.
+
+    Returns the number of rows cleared.
+    """
+
+    import logging
+    import sqlite3
+
+    logger = logging.getLogger("pixie")
+    db_path = settings.db_path
+    tools_dir = settings.tools_dir
+
+    cleared = 0
+    try:
+        with sqlite3.connect(db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT tool_id FROM tool_state WHERE archived = 1"
+            ).fetchall()
+            for row in rows:
+                tool_id = row["tool_id"]
+                tool_path = tools_dir / tool_id
+                if not tool_path.is_dir():
+                    # Tool genuinely gone; leave archived=1 alone (it's a
+                    # tombstone for a missing tool).
+                    continue
+                logged = conn.execute(
+                    "SELECT 1 FROM archive_log WHERE tool_id = ? LIMIT 1",
+                    (tool_id,),
+                ).fetchone()
+                if logged:
+                    continue
+                conn.execute(
+                    "UPDATE tool_state SET archived = 0, archived_at = NULL "
+                    "WHERE tool_id = ?",
+                    (tool_id,),
+                )
+                logger.info(
+                    "sweep: cleared orphaned archived flag for %s", tool_id
+                )
+                cleared += 1
+            conn.commit()
+    except sqlite3.OperationalError:
+        # archive_log table may not exist on a brand-new DB before init_db
+        # has been called; treat as nothing-to-do.
+        return 0
+    return cleared
+
+
+@app.command()
+def archive(
+    tool_id: str = typer.Argument(..., help="Tool folder name."),
+) -> None:
+    """Archive a tool — hides it from the sidebar and records the action."""
+
+    settings = get_settings()
+    tool_path = settings.tools_dir / tool_id
+    if not tool_path.is_dir():
+        _stderr_console().print(
+            f"[red]no such tool:[/red] {tool_id}"
+        )
+        raise typer.Exit(code=1)
+    asyncio.run(_archive_async(settings.db_path, tool_id))
+    _stderr_console().print(f"[green]archived[/green] {tool_id}")
+
+
+async def _archive_async(db_path: Path, tool_id: str) -> None:
+    from pixie import db
+    await db.set_archived(db_path, tool_id, True)
+    await db.log_archive(db_path, tool_id, source="cli")
+
+
+@app.command()
+def unarchive(
+    tool_id: str = typer.Argument(..., help="Tool folder name."),
+) -> None:
+    """Unarchive a tool — restores it to the sidebar."""
+
+    settings = get_settings()
+    asyncio.run(_unarchive_async(settings.db_path, tool_id))
+    _stderr_console().print(f"[green]unarchived[/green] {tool_id}")
+
+
+async def _unarchive_async(db_path: Path, tool_id: str) -> None:
+    from pixie import db
+    await db.set_archived(db_path, tool_id, False)
+    await db.unlog_archive(db_path, tool_id)
+
 
 def _sweep_candidates(
     db_path: Path, cutoff: datetime, tool_filter: str | None
@@ -646,11 +749,14 @@ def _sweep_candidates(
         params.append(tool_filter)
     sql += "ORDER BY started_at ASC"
 
+    from pixie import db as _db
     try:
-        with sqlite3.connect(db_path) as conn:
-            conn.row_factory = sqlite3.Row
+        conn = _db.connect(db_path)
+        try:
             cur = conn.execute(sql, params)
             rows = [dict(row) for row in cur.fetchall()]
+        finally:
+            conn.close()
     except sqlite3.OperationalError as exc:
         # Tolerant: the runs table might be missing the starred/label
         # columns until the artefact migration lands.
@@ -664,10 +770,12 @@ def _sweep_candidates(
                 base_sql += " AND tool_id = ?"
                 base_params.append(tool_filter)
             base_sql += " ORDER BY started_at ASC"
-            with sqlite3.connect(db_path) as conn:
-                conn.row_factory = sqlite3.Row
+            conn = _db.connect(db_path)
+            try:
                 cur = conn.execute(base_sql, base_params)
                 rows = [dict(row) for row in cur.fetchall()]
+            finally:
+                conn.close()
         else:
             raise
     # Drop starred / labelled (never prune them).
@@ -678,17 +786,20 @@ def _sweep_candidates(
 
 
 def _sweep_apply(db_path: Path, run_ids: list[str]) -> int:
-    import sqlite3
+    from pixie import db as _db
 
     if not run_ids:
         return 0
     placeholders = ",".join("?" for _ in run_ids)
-    with sqlite3.connect(db_path) as conn:
+    conn = _db.connect(db_path)
+    try:
         cur = conn.execute(
             f"DELETE FROM runs WHERE id IN ({placeholders})", run_ids,
         )
         conn.commit()
         return cur.rowcount or 0
+    finally:
+        conn.close()
 
 
 # --- artefacts --------------------------------------------------------------
@@ -756,12 +867,16 @@ async def _recent_artefact_rows_filtered(
     sql += "ORDER BY created_at DESC LIMIT ?"
     params.append(limit)
 
+    from pixie import db as _db
+
     def _query() -> list[dict[str, object]]:
         try:
-            with sqlite3.connect(db_path) as conn:
-                conn.row_factory = sqlite3.Row
+            conn = _db.connect(db_path)
+            try:
                 cur = conn.execute(sql, params)
                 return [dict(row) for row in cur.fetchall()]
+            finally:
+                conn.close()
         except sqlite3.OperationalError:
             return []
 
