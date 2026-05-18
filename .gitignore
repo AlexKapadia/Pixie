@@ -20,6 +20,9 @@ pixie.db
 pixie.db-journal
 pixie.db-wal
 pixie.db-shm
+pixie.db.bak
+pixie.db.test
+pixie.db.test-*
 .env
 .env.*
 !.env.example
@@ -28,6 +31,9 @@ pixie.db-shm
 # build their own. .gitkeep preserves the directory.
 tools/*
 !tools/.gitkeep
+# CI helper scripts (not user tools) — tracked.
+!tools/ci/
+!tools/ci/**
 
 # Python build/cache
 __pycache__/
@@ -46,3 +52,7 @@ node_modules/
 # Top-level Python venv
 .venv/
 Master Prompt.md
+
+# Local planning docs — never push
+DESKTOP_APP_PLAN.md
+*.local.md
