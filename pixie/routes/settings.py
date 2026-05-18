@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 
@@ -252,41 +252,163 @@ async def global_settings_page(
     return templates.TemplateResponse(request, template, ctx)
 
 
-_INSTANT_KEYS = {"theme", "accent", "density"}
+# Allowlist of preference keys writable through /settings/preference, with the
+# validator used to normalise the raw string into a DB value. Each validator
+# returns the canonicalised value or raises HTTPException(400) on bad input.
+def _validate_theme(v: str) -> str:
+    if v not in THEME_CHOICES:
+        raise HTTPException(status_code=400, detail="unknown theme")
+    return v
+
+
+def _validate_accent(v: str) -> str:
+    if v not in ACCENT_CHOICES:
+        raise HTTPException(status_code=400, detail="unknown accent")
+    return v
+
+
+def _validate_density(v: str) -> str:
+    if v not in DENSITY_CHOICES:
+        raise HTTPException(status_code=400, detail="unknown density")
+    return v
+
+
+def _validate_bool_flag(v: Any) -> str:
+    if isinstance(v, bool):
+        return "1" if v else "0"
+    s = str(v).strip().lower()
+    if s in ("1", "true", "on", "yes"):
+        return "1"
+    if s in ("0", "false", "off", "no", ""):
+        return "0"
+    raise HTTPException(status_code=400, detail="boolean expected")
+
+
+def _validate_warm_keep_max(v: Any) -> str:
+    try:
+        n = int(v)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="integer expected") from exc
+    return str(max(1, min(n, 64)))
+
+
+def _validate_warm_keep_seconds(v: Any) -> str:
+    try:
+        n = int(v)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="integer expected") from exc
+    return str(max(0, min(n, 24 * 3600)))
+
+
+_PREFERENCE_VALIDATORS: dict[str, Any] = {
+    "theme": _validate_theme,
+    "accent": _validate_accent,
+    "density": _validate_density,
+    "developer_mode": _validate_bool_flag,
+    "warm_keep_max": _validate_warm_keep_max,
+    "warm_keep_seconds": _validate_warm_keep_seconds,
+}
+
+
+async def _read_body(request: Request) -> dict[str, Any]:
+    """Parse a request body as either JSON or form-encoded data.
+
+    Content-Type drives the decision so the same endpoint accepts
+    ``application/json`` (htmx with json-enc, fetch, programmatic
+    clients) and ``application/x-www-form-urlencoded`` / multipart
+    (FastAPI ``Form(...)`` callers, plain HTML form submits).
+
+    Empty / missing bodies yield ``{}`` rather than raising — callers
+    enforce required keys with explicit ``KeyError`` handling.
+    """
+
+    ctype = (request.headers.get("content-type") or "").split(";", 1)[0].strip().lower()
+    if ctype == "application/json":
+        try:
+            payload = await request.json()
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail="invalid JSON body") from exc
+        if not isinstance(payload, dict):
+            raise HTTPException(
+                status_code=400, detail="JSON body must be an object"
+            )
+        return payload
+    # Form, multipart, or no body at all -> let FastAPI's form parser handle it.
+    try:
+        form = await request.form()
+    except Exception as exc:  # noqa: BLE001 — surface as 400
+        raise HTTPException(status_code=400, detail="invalid form body") from exc
+    return {k: v for k, v in form.items()}
 
 
 @router.post("/settings/preference", response_class=Response)
 async def save_preference(
+    request: Request,
     settings: SettingsDep,
     launcher: LauncherDep,
-    key: Annotated[str, Form()],
-    value: Annotated[str, Form()],
 ) -> Response:
-    """Persist a single Appearance preference immediately.
+    """Persist a single preference immediately.
 
     The settings page's Theme / Accent / Density radios POST here from their
     onchange handler so the chosen value sticks across htmx swaps — without
-    waiting for the Save button or losing the rest of the form state.
+    waiting for the Save button or losing the rest of the form state. The
+    same endpoint also takes ``developer_mode`` / ``warm_keep_max`` /
+    ``warm_keep_seconds`` so programmatic clients can flip behaviour
+    without rendering the whole form.
+
+    Accepts both ``application/x-www-form-urlencoded`` and
+    ``application/json`` bodies of ``{key, value}``.
+
     Returns 204 (no body) so htmx doesn't replace anything; the client has
     already updated the DOM via Pixie.setTheme/Accent/Density.
     """
-    if key not in _INSTANT_KEYS:
-        raise HTTPException(status_code=400, detail="unknown preference key")
-    if key == "theme" and value not in THEME_CHOICES:
-        raise HTTPException(status_code=400, detail="unknown theme")
-    if key == "accent" and value not in ACCENT_CHOICES:
-        raise HTTPException(status_code=400, detail="unknown accent")
-    if key == "density" and value not in DENSITY_CHOICES:
-        raise HTTPException(status_code=400, detail="unknown density")
 
-    await db.set_setting(settings.db_path, key, value)
-    # Mirror into in-memory Settings so subsequent SSR payloads match.
-    if key == "theme":
-        settings.theme = "dark" if THEMES.get(value, {}).get("variant") == "dark" else "light"
-    elif key == "accent":
-        settings.accent = value
-    elif key == "density":
-        settings.density = value  # type: ignore[assignment]
+    body = await _read_body(request)
+    key = body.get("key")
+    if key is None:
+        raise HTTPException(status_code=400, detail="missing 'key'")
+    if not isinstance(key, str) or key not in _PREFERENCE_VALIDATORS:
+        raise HTTPException(status_code=400, detail="unknown preference key")
+    if "value" not in body:
+        raise HTTPException(status_code=400, detail="missing 'value'")
+    raw_value = body["value"]
+    canonical = _PREFERENCE_VALIDATORS[key](raw_value)
+
+    await db.set_setting(settings.db_path, key, canonical)
+
+    # Reflect runtime-impacting fields into the live Settings/launcher so the
+    # change takes effect immediately, mirroring the legacy /settings handler.
+    if key == "warm_keep_max":
+        launcher.settings.warm_keep_max = int(canonical)
+    elif key == "warm_keep_seconds":
+        launcher.settings.warm_keep_seconds = int(canonical)
+    elif key == "developer_mode":
+        settings.developer_mode = canonical == "1"
+    # SSR payload reads from DB on every request via middleware, so no
+    # in-memory mirror needed for theme/accent/density. The in-memory
+    # Settings.theme is "light"/"dark" only and would collapse rich theme
+    # names like "dracula" — we deliberately don't touch it here.
+    return Response(status_code=204)
+
+
+@router.post("/settings/theme", response_class=Response)
+async def save_theme(
+    request: Request,
+    settings: SettingsDep,
+    launcher: LauncherDep,
+) -> Response:
+    """Alias for ``POST /settings/preference`` with ``key=theme``.
+
+    Convenience endpoint that takes a single ``theme`` field (form or
+    JSON) and validates it against :data:`THEME_CHOICES`. Returns 204
+    on success, 400 on an unknown theme.
+    """
+
+    body = await _read_body(request)
+    if "theme" not in body:
+        raise HTTPException(status_code=400, detail="missing 'theme'")
+    theme = _validate_theme(str(body["theme"]))
+    await db.set_setting(settings.db_path, "theme", theme)
     return Response(status_code=204)
 
 
@@ -296,13 +418,32 @@ async def save_global_settings(
     settings: SettingsDep,
     launcher: LauncherDep,
     templates: TemplatesDep,
-    theme: Annotated[str, Form()] = "light",
-    accent: Annotated[str, Form()] = "indigo",
-    density: Annotated[str, Form()] = "comfortable",
-    warm_keep_max: Annotated[int, Form()] = 5,
-    warm_keep_seconds: Annotated[int, Form()] = 300,
-    developer_mode: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
+    """Persist every Appearance + Behaviour field as one transaction.
+
+    Accepts both ``application/x-www-form-urlencoded`` (the default
+    HTML form submit + htmx default) and ``application/json`` bodies
+    so programmatic clients and htmx-with-json-enc both work.
+    """
+
+    body = await _read_body(request)
+    theme = str(body.get("theme", "light"))
+    accent = str(body.get("accent", "indigo"))
+    density = str(body.get("density", "comfortable"))
+    try:
+        warm_keep_max = int(body.get("warm_keep_max", 5) or 5)
+    except (TypeError, ValueError):
+        warm_keep_max = 5
+    try:
+        warm_keep_seconds = int(body.get("warm_keep_seconds", 300) or 300)
+    except (TypeError, ValueError):
+        warm_keep_seconds = 300
+    dev_raw = body.get("developer_mode", "")
+    if isinstance(dev_raw, bool):
+        dev_flag = dev_raw
+    else:
+        dev_flag = str(dev_raw).strip().lower() in ("1", "true", "on", "yes")
+
     if theme not in THEME_CHOICES:
         theme = "light"
     if accent not in ACCENT_CHOICES:
@@ -311,7 +452,6 @@ async def save_global_settings(
         density = "comfortable"
     warm_keep_max = max(1, min(int(warm_keep_max), 64))
     warm_keep_seconds = max(0, min(int(warm_keep_seconds), 24 * 3600))
-    dev_flag = developer_mode.lower() in ("1", "true", "on", "yes")
 
     await db.set_setting(settings.db_path, "theme", theme)
     await db.set_setting(settings.db_path, "accent", accent)
@@ -423,9 +563,21 @@ async def revalidate_status_fragment(
 
 @router.post("/settings/clear-history")
 async def clear_history(
+    request: Request,
     settings: SettingsDep,
-    tool_id: Annotated[str | None, Form()] = None,
 ) -> Response:
+    """Drop run history. Accepts form-encoded OR JSON ``{tool_id}``.
+
+    Omitting ``tool_id`` (or sending ``null``) wipes every tool's runs.
+    """
+
+    body = await _read_body(request)
+    raw_id = body.get("tool_id")
+    tool_id: str | None
+    if raw_id is None or raw_id == "":
+        tool_id = None
+    else:
+        tool_id = str(raw_id)
     deleted = await db.delete_runs(settings.db_path, tool_id=tool_id)
     target = tool_id or "all tools"
     return Response(
@@ -527,11 +679,12 @@ async def set_tool_secret(
     settings: SettingsDep,
     launcher: LauncherDep,
     templates: TemplatesDep,
-    value: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     tool = _resolve_tool(settings, tool_id)
     if tool is None or tool.schema is None:
         raise HTTPException(status_code=404, detail=f"tool {tool_id!r} not found")
+    body = await _read_body(request)
+    value = str(body.get("value", "") or "")
     if not value:
         return HTMLResponse(
             content="",
@@ -593,16 +746,37 @@ def _find_secret_row(tool: DiscoveredTool, key: str) -> dict[str, Any]:
 @router.post("/tool/{tool_id}/overrides", response_class=HTMLResponse)
 async def save_tool_overrides(
     tool_id: str,
+    request: Request,
     settings: SettingsDep,
-    max_memory_mb: Annotated[int, Form()] = 0,
-    max_runtime_seconds: Annotated[int, Form()] = 0,
-    warm_keep_seconds: Annotated[int, Form()] = 0,
-    concurrent: Annotated[str, Form()] = "",
 ) -> Response:
     tool = _resolve_tool(settings, tool_id)
     if tool is None or tool.schema is None:
         raise HTTPException(status_code=404, detail=f"tool {tool_id!r} not found")
     schema = tool.schema
+    body = await _read_body(request)
+
+    def _as_int(field: str, default: int = 0) -> int:
+        raw = body.get(field, default)
+        if raw is None or raw == "":
+            return default
+        try:
+            return int(raw)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(
+                status_code=400, detail=f"{field} must be an integer"
+            ) from exc
+
+    max_memory_mb = _as_int("max_memory_mb")
+    max_runtime_seconds = _as_int("max_runtime_seconds")
+    warm_keep_seconds = _as_int("warm_keep_seconds")
+    concurrent_raw = body.get("concurrent", "")
+    if isinstance(concurrent_raw, bool):
+        concurrent_flag = concurrent_raw
+    else:
+        concurrent_flag = str(concurrent_raw).strip().lower() in (
+            "1", "true", "on", "yes"
+        )
+
     overrides: dict[str, Any] = {}
     if max_memory_mb and max_memory_mb != schema.max_memory_mb:
         overrides["max_memory_mb"] = max(64, min(int(max_memory_mb), 65536))
@@ -614,7 +788,6 @@ async def save_tool_overrides(
         overrides["warm_keep_seconds"] = max(
             0, min(int(warm_keep_seconds), 24 * 3600)
         )
-    concurrent_flag = concurrent.lower() in ("1", "true", "on", "yes")
     if concurrent_flag != schema.concurrent:
         overrides["concurrent"] = concurrent_flag
     await db.set_tool_overrides(settings.db_path, tool.tool_id, overrides)
