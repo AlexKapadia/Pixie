@@ -167,6 +167,10 @@ async def _sidebar_context(
         if len(recent) >= 5:
             break
 
+    archived_tool_ids = [
+        tid for tid, st in state_by_id.items() if st.get("archived")
+    ]
+
     return {
         "sidebar_groups": list(groups.items()),
         "running_count": running_count,
@@ -177,6 +181,7 @@ async def _sidebar_context(
         "sidebar_favourites": favourites[:10],
         "sidebar_recent": recent,
         "archived_count": archived_count,
+        "archived_tool_ids": archived_tool_ids,
         "sidebar_total_tools": len(entries),
     }
 
@@ -254,12 +259,22 @@ async def dashboard_index(
     ctx = _base_context(request, settings)
 
     if not sidebar["sidebar_groups"]:
-        # Pure-empty state: no tools on disk at all.
+        # Distinguish three empty states:
+        #   (a) no tools on disk at all
+        #   (b) tools all archived (offer one-click unarchive affordance)
+        #   (c) shouldn't reach here when groups present — handled below
+        discovered = sidebar.get("discovered") or []
+        archived_count = sidebar.get("archived_count", 0)
+        all_archived = bool(discovered) and archived_count > 0
         ctx.update(
             sidebar_groups=[],
             running_count=0,
             active_tool_id=None,
             tools_dir=str(settings.tools_dir),
+            empty_state_kind="all_archived" if all_archived else "no_tools",
+            all_archived=all_archived,
+            archived_count=archived_count,
+            archived_tool_ids=sidebar.get("archived_tool_ids", []),
         )
         return templates.TemplateResponse(request, "empty_state.html", ctx)
 

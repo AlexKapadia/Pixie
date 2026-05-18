@@ -126,7 +126,27 @@ CREATE TABLE IF NOT EXISTS validate_jobs (
     failed INTEGER NOT NULL DEFAULT 0,
     details_json TEXT
 );
+
+CREATE TABLE IF NOT EXISTS archive_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tool_id TEXT NOT NULL,
+    archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    source TEXT CHECK(source IN ('cli','api','test'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_archive_log_tool_id
+    ON archive_log(tool_id);
 """
+
+# Indexes whose columns exist on the base SCHEMA (safe to create early).
+# Indexes that depend on migrated columns live in
+# ``_POST_MIGRATION_INDEXES`` so they only run after the ALTERs have applied.
+_BASE_INDEXES: tuple[str, ...] = (
+    "CREATE INDEX IF NOT EXISTS idx_runs_status ON runs(status)",
+    "CREATE INDEX IF NOT EXISTS idx_validate_jobs_status "
+    "ON validate_jobs(status)",
+    "CREATE INDEX IF NOT EXISTS idx_artefacts_label ON artefacts(label)",
+)
 
 # tool_state column additions applied in order. Re-adds fail with
 # ``OperationalError`` which we swallow — that is the idempotency contract.
@@ -161,6 +181,13 @@ _POST_MIGRATION_INDEXES: tuple[str, ...] = (
     "ON tool_state(archived)",
     "CREATE INDEX IF NOT EXISTS idx_tool_state_pinned "
     "ON tool_state(pinned)",
+    # Partial indexes on runs.starred / runs.label (added by
+    # _RUNS_COLUMN_MIGRATIONS above). Partial form keeps the index tiny
+    # since the vast majority of runs are not starred / labelled.
+    "CREATE INDEX IF NOT EXISTS idx_runs_starred "
+    "ON runs(starred) WHERE starred = 1",
+    "CREATE INDEX IF NOT EXISTS idx_runs_label "
+    "ON runs(label) WHERE label IS NOT NULL",
 )
 
 
@@ -186,6 +213,19 @@ def _connect(db_path: Path) -> Iterator[sqlite3.Connection]:
         yield conn
     finally:
         conn.close()
+
+
+def connect(path: Path | str) -> sqlite3.Connection:
+    """Public helper: open a pixie.db connection with the right PRAGMAs.
+
+    Always enables ``PRAGMA foreign_keys = ON`` (sqlite3 defaults to OFF, so
+    any code path that opens its own connection MUST go through this helper
+    to keep ON DELETE CASCADE semantics intact). Mirrors
+    :func:`_open_connection` settings so external callers behave identically
+    to the internal context manager. Caller owns ``close()``.
+    """
+
+    return _open_connection(Path(path))
 
 
 def _safe_alter(conn: sqlite3.Connection, statement: str) -> None:
@@ -222,9 +262,249 @@ def init_db(db_path: Path) -> None:
             _safe_alter(conn, f"ALTER TABLE tool_state ADD COLUMN {column} {ddl}")
         for column, ddl in _RUNS_COLUMN_MIGRATIONS:
             _safe_alter(conn, f"ALTER TABLE runs ADD COLUMN {column} {ddl}")
+        for statement in _BASE_INDEXES:
+            _safe_alter(conn, statement)
         for statement in _POST_MIGRATION_INDEXES:
             _safe_alter(conn, statement)
+        # Rebuild artefacts table to add ON DELETE CASCADE + UNIQUE(rel_path)
+        # if not already in that shape. Idempotent: short-circuits when the
+        # current FK is already cascading.
+        _rebuild_artefacts_with_cascade_fk(conn)
     logger.info("sqlite schema initialised at %s", db_path)
+
+
+def run_migrations(conn: sqlite3.Connection) -> None:
+    """Apply all idempotent schema migrations on an open connection.
+
+    Lets external callers (smoke tests, ad-hoc scripts) run the same
+    migration sequence ``init_db`` uses without going through the
+    file-path entry point. Re-runnable; each step short-circuits when
+    already applied.
+    """
+
+    conn.executescript(SCHEMA)
+    for column, ddl in _TOOL_STATE_COLUMN_MIGRATIONS:
+        _safe_alter(conn, f"ALTER TABLE tool_state ADD COLUMN {column} {ddl}")
+    for column, ddl in _RUNS_COLUMN_MIGRATIONS:
+        _safe_alter(conn, f"ALTER TABLE runs ADD COLUMN {column} {ddl}")
+    for statement in _BASE_INDEXES:
+        _safe_alter(conn, statement)
+    for statement in _POST_MIGRATION_INDEXES:
+        _safe_alter(conn, statement)
+    _rebuild_artefacts_with_cascade_fk(conn)
+
+
+# ---------------------------------------------------------------------------
+# Artefacts table rebuild (FK CASCADE + UNIQUE rel_path)
+# ---------------------------------------------------------------------------
+
+
+# Column order MUST match SCHEMA's CREATE TABLE artefacts above. Used both
+# in the rebuild CREATE TABLE and in the INSERT ... SELECT statement so we
+# don't rely on positional ordering across SQLite versions.
+_ARTEFACTS_COLUMNS: tuple[str, ...] = (
+    "id", "run_id", "tool_id", "output_key", "rel_path", "filename",
+    "mime", "size_bytes", "sha256", "created_at", "starred", "label",
+    "tags", "thumb_path", "deleted_at",
+)
+
+
+def _artefacts_fk_is_cascade(conn: sqlite3.Connection) -> bool:
+    """True iff artefacts.run_id FK already has ON DELETE CASCADE.
+
+    ``PRAGMA foreign_key_list`` returns rows like
+    ``(id, seq, table, from, to, on_update, on_delete, match)``. We look
+    for the row whose ``from`` column is ``run_id`` and whose
+    ``on_delete`` is ``CASCADE``.
+    """
+
+    try:
+        rows = conn.execute("PRAGMA foreign_key_list(artefacts)").fetchall()
+    except sqlite3.OperationalError:
+        return False
+    for row in rows:
+        # row is a sqlite3.Row when row_factory is set (default in this
+        # module). Access by name for clarity.
+        try:
+            from_col = row["from"]
+            on_delete = row["on_delete"]
+        except (IndexError, KeyError):
+            # Fallback for plain tuples.
+            from_col = row[3]
+            on_delete = row[6]
+        if from_col == "run_id" and (on_delete or "").upper() == "CASCADE":
+            return True
+    return False
+
+
+def _artefacts_has_unique_rel_path(conn: sqlite3.Connection) -> bool:
+    """True iff artefacts.rel_path is covered by a UNIQUE index."""
+
+    try:
+        idx_rows = conn.execute(
+            "PRAGMA index_list(artefacts)"
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return False
+    for idx in idx_rows:
+        # PRAGMA index_list: (seq, name, unique, origin, partial)
+        try:
+            name = idx["name"]
+            is_unique = idx["unique"]
+        except (IndexError, KeyError):
+            name = idx[1]
+            is_unique = idx[2]
+        if not is_unique:
+            continue
+        info = conn.execute(f"PRAGMA index_info({name})").fetchall()
+        # index_info: (seqno, cid, name)
+        cols: list[str] = []
+        for info_row in info:
+            try:
+                cols.append(info_row["name"])
+            except (IndexError, KeyError):
+                cols.append(info_row[2])
+        if cols == ["rel_path"]:
+            return True
+    return False
+
+
+def _rebuild_artefacts_with_cascade_fk(conn: sqlite3.Connection) -> None:
+    """Rebuild ``artefacts`` to add ON DELETE CASCADE + UNIQUE(rel_path).
+
+    Idempotent: short-circuits when both the cascading FK and the
+    UNIQUE constraint are already present. Runs inside an exclusive
+    transaction so a crash mid-rebuild leaves the original table intact.
+
+    Steps:
+        1. Begin transaction (DEFERRED).
+        2. Purge orphan rows whose run_id no longer points at runs.
+        3. Dedupe duplicate rel_path rows keeping the most recent (max id).
+        4. Create ``artefacts_new`` mirroring the current schema PLUS
+           ``ON DELETE CASCADE`` on the run_id FK and ``UNIQUE(rel_path)``.
+        5. Copy rows over.
+        6. Drop old table, rename new one into place.
+        7. Recreate every index that previously lived on the table.
+        8. Commit.
+    """
+
+    if _artefacts_fk_is_cascade(conn) and _artefacts_has_unique_rel_path(conn):
+        return
+
+    logger.info("rebuilding artefacts table to add FK CASCADE + UNIQUE(rel_path)")
+
+    cols_csv = ", ".join(_ARTEFACTS_COLUMNS)
+
+    # Foreign-key enforcement MUST be OFF for the rebuild dance so SQLite
+    # doesn't refuse the DROP of the original table while child rows
+    # still reference it through the new table's not-yet-renamed FK. We
+    # restore the prior state in a finally block.
+    fk_was_on_row = conn.execute("PRAGMA foreign_keys").fetchone()
+    fk_was_on = bool(fk_was_on_row[0]) if fk_was_on_row else True
+    conn.execute("PRAGMA foreign_keys = OFF")
+    try:
+        conn.execute("BEGIN")
+        try:
+            # Orphan purge — child rows whose parent run was already deleted
+            # (would otherwise survive into the new cascading table and could
+            # never be cleaned via runs deletion).
+            orphans = conn.execute(
+                "DELETE FROM artefacts "
+                "WHERE run_id NOT IN (SELECT id FROM runs)"
+            )
+            orphan_count = orphans.rowcount or 0
+            if orphan_count:
+                logger.info(
+                    "artefacts rebuild: purged %d orphan row(s)",
+                    orphan_count,
+                )
+
+            # Dedupe — required before UNIQUE(rel_path) can be enforced.
+            # Keep the highest id (most recent insert) per rel_path.
+            dedup = conn.execute(
+                "DELETE FROM artefacts WHERE id NOT IN ("
+                "  SELECT MAX(id) FROM artefacts GROUP BY rel_path"
+                ")"
+            )
+            dedup_count = dedup.rowcount or 0
+            if dedup_count:
+                logger.info(
+                    "artefacts rebuild: removed %d duplicate rel_path row(s)",
+                    dedup_count,
+                )
+
+            conn.execute(
+                "CREATE TABLE artefacts_new ("
+                "  id INTEGER PRIMARY KEY,"
+                "  run_id TEXT NOT NULL,"
+                "  tool_id TEXT NOT NULL,"
+                "  output_key TEXT NOT NULL,"
+                "  rel_path TEXT NOT NULL,"
+                "  filename TEXT NOT NULL,"
+                "  mime TEXT NOT NULL,"
+                "  size_bytes INTEGER NOT NULL,"
+                "  sha256 TEXT NOT NULL,"
+                "  created_at TIMESTAMP NOT NULL,"
+                "  starred INTEGER NOT NULL DEFAULT 0,"
+                "  label TEXT,"
+                "  tags TEXT,"
+                "  thumb_path TEXT,"
+                "  deleted_at TIMESTAMP,"
+                "  UNIQUE(rel_path),"
+                "  FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE"
+                ")"
+            )
+            conn.execute(
+                f"INSERT INTO artefacts_new ({cols_csv}) "
+                f"SELECT {cols_csv} FROM artefacts"
+            )
+            conn.execute("DROP TABLE artefacts")
+            conn.execute("ALTER TABLE artefacts_new RENAME TO artefacts")
+
+            # Recreate the indexes that lived on the original table.
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_artefacts_run "
+                "ON artefacts(run_id)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_artefacts_tool "
+                "ON artefacts(tool_id, created_at DESC)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_artefacts_starred "
+                "ON artefacts(starred) WHERE starred = 1"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_artefacts_deleted "
+                "ON artefacts(deleted_at)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_artefacts_label "
+                "ON artefacts(label)"
+            )
+            conn.execute("COMMIT")
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
+    finally:
+        # Restore previous foreign-key enforcement. SQLite's foreign-key
+        # check on schema operations is brittle; if there are residual
+        # violations we surface them via PRAGMA foreign_key_check before
+        # turning enforcement back on so the next commit isn't poisoned.
+        if fk_was_on:
+            violations = conn.execute(
+                "PRAGMA foreign_key_check(artefacts)"
+            ).fetchall()
+            if violations:
+                logger.warning(
+                    "artefacts rebuild: %d FK violation(s) remain "
+                    "after rebuild (rows orphaned by external deletes); "
+                    "leaving foreign_keys OFF for this connection — "
+                    "next reconnect re-enables enforcement.",
+                    len(violations),
+                )
+            else:
+                conn.execute("PRAGMA foreign_keys = ON")
 
 
 def _now() -> str:
@@ -670,17 +950,64 @@ async def delete_runs(db_path: Path, tool_id: str | None = None) -> int:
 
 
 def _sync_vacuum(db_path: Path) -> int:
-    """Run VACUUM, returning the new on-disk file size in bytes."""
+    """Run VACUUM + ANALYZE, returning the new on-disk file size in bytes.
 
-    # VACUUM must run outside any transaction. The connection opens with
-    # ``isolation_level=None`` (autocommit) so the bare statement works.
+    ANALYZE follows VACUUM in the same connection so the query planner's
+    ``sqlite_stat1`` table is repopulated against the freshly compacted
+    pages. Both statements must run outside any transaction; the
+    connection opens with ``isolation_level=None`` (autocommit) so the
+    bare statements work.
+    """
+
     with _connect(db_path) as conn:
         conn.execute("VACUUM")
+        conn.execute("ANALYZE")
     return db_path.stat().st_size if db_path.exists() else 0
 
 
 async def vacuum(db_path: Path) -> int:
     return await run_in_threadpool(_sync_vacuum, db_path)
+
+
+def _sync_analyze(db_path: Path) -> None:
+    with _connect(db_path) as conn:
+        conn.execute("ANALYZE")
+
+
+async def analyze(db_path: Path) -> None:
+    """Refresh SQLite's query-planner stats (``sqlite_stat1``).
+
+    Cheap to run periodically; called from the sweeper so the planner
+    keeps up with shifting table sizes between full VACUUM cycles.
+    """
+
+    await run_in_threadpool(_sync_analyze, db_path)
+
+
+def _sync_purge_orphan_artefacts(db_path: Path) -> int:
+    """Delete artefact rows whose ``run_id`` no longer exists in ``runs``.
+
+    With the cascading FK (see :func:`_rebuild_artefacts_with_cascade_fk`)
+    this should normally be a no-op; we still run it because:
+        * legacy rows may predate the cascade migration,
+        * direct sqlite3.connect() callers historically opened the DB
+          with foreign_keys OFF and could orphan rows,
+        * external corruption/manual edits can introduce orphans too.
+    Returns the number of rows deleted.
+    """
+
+    with _connect(db_path) as conn:
+        cur = conn.execute(
+            "DELETE FROM artefacts "
+            "WHERE run_id NOT IN (SELECT id FROM runs)"
+        )
+        return cur.rowcount or 0
+
+
+async def purge_orphan_artefacts(db_path: Path) -> int:
+    """Remove artefact rows whose parent run row was deleted."""
+
+    return await run_in_threadpool(_sync_purge_orphan_artefacts, db_path)
 
 
 def _sync_db_size(db_path: Path) -> int:
@@ -1379,6 +1706,67 @@ def _sync_set_archived(db_path: Path, tool_id: str, archived: bool) -> None:
 
 async def set_archived(db_path: Path, tool_id: str, archived: bool) -> None:
     await run_in_threadpool(_sync_set_archived, db_path, tool_id, archived)
+
+
+# ---------------------------------------------------------------------------
+# Archive log (4.1) — distinguish intentional archive from orphaned flags
+# ---------------------------------------------------------------------------
+
+
+def _sync_log_archive(db_path: Path, tool_id: str, source: str) -> None:
+    """Record an intentional archive event so sweep can distinguish
+    legitimate archived tools from orphaned ``archived=1`` flags.
+    """
+
+    if source not in ("cli", "api", "test"):
+        source = "api"
+    with _connect(db_path) as conn:
+        conn.execute(
+            "INSERT INTO archive_log(tool_id, source) VALUES(?, ?)",
+            (tool_id, source),
+        )
+
+
+async def log_archive(db_path: Path, tool_id: str, source: str) -> None:
+    await run_in_threadpool(_sync_log_archive, db_path, tool_id, source)
+
+
+def _sync_unlog_archive(db_path: Path, tool_id: str) -> int:
+    with _connect(db_path) as conn:
+        cur = conn.execute(
+            "DELETE FROM archive_log WHERE tool_id = ?",
+            (tool_id,),
+        )
+        return cur.rowcount or 0
+
+
+async def unlog_archive(db_path: Path, tool_id: str) -> int:
+    return await run_in_threadpool(_sync_unlog_archive, db_path, tool_id)
+
+
+def _sync_has_archive_log(db_path: Path, tool_id: str) -> bool:
+    with _connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT 1 FROM archive_log WHERE tool_id = ? LIMIT 1",
+            (tool_id,),
+        ).fetchone()
+        return row is not None
+
+
+async def has_archive_log(db_path: Path, tool_id: str) -> bool:
+    return await run_in_threadpool(_sync_has_archive_log, db_path, tool_id)
+
+
+def _sync_list_archived_tools(db_path: Path) -> list[str]:
+    with _connect(db_path) as conn:
+        rows = conn.execute(
+            "SELECT tool_id FROM tool_state WHERE archived = 1"
+        ).fetchall()
+        return [row["tool_id"] for row in rows]
+
+
+async def list_archived_tools(db_path: Path) -> list[str]:
+    return await run_in_threadpool(_sync_list_archived_tools, db_path)
 
 
 def _sync_set_pinned(db_path: Path, tool_id: str, pinned: bool) -> None:

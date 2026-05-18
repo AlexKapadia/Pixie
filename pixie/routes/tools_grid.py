@@ -344,6 +344,7 @@ def _assert_tool_exists(settings: Settings, tool_id: str) -> None:
 async def archive_tool_route(tool_id: str, settings: SettingsDep) -> None:
     _assert_tool_exists(settings, tool_id)
     await db.set_archived(settings.db_path, tool_id, True)
+    await db.log_archive(settings.db_path, tool_id, source="api")
 
 
 @router.post(
@@ -352,6 +353,7 @@ async def archive_tool_route(tool_id: str, settings: SettingsDep) -> None:
 async def unarchive_tool_route(tool_id: str, settings: SettingsDep) -> None:
     _assert_tool_exists(settings, tool_id)
     await db.set_archived(settings.db_path, tool_id, False)
+    await db.unlog_archive(settings.db_path, tool_id)
 
 
 @router.post("/api/tools/{tool_id}/pin", status_code=status.HTTP_204_NO_CONTENT)

@@ -6,7 +6,42 @@
 <div class="pixie-empty">
   <div class="pixie-empty__inner">
 
-    {# ---------- Hero ---------- #}
+    {%- if all_archived %}
+    {# ---------- (b) Everything archived: offer one-click unarchive ---------- #}
+    <div class="pixie-empty__hero">
+      <img src="/static/pixie-logo.png"
+           alt="Pixie"
+           width="56" height="56"
+           class="pixie-empty__logo"
+           onerror="this.style.display='none';" />
+      <div class="pixie-empty__hero-text">
+        <span class="badge badge--muted mono">Pixie · v{{ version | default('0.1.0') }}</span>
+        <h2 class="pixie-empty__title">All tools are archived.</h2>
+        <p class="t-body pixie-empty__lede">
+          You have {{ archived_count }} archived tool{{ '' if archived_count == 1 else 's' }} on disk
+          but none visible in the sidebar. Restore one to get back to work.
+        </p>
+      </div>
+    </div>
+
+    <div class="pixie-empty__archived-list">
+      {%- for tid in archived_tool_ids %}
+      <div class="pixie-empty__archived-row">
+        <span class="mono">{{ tid }}</span>
+        <button type="button"
+                class="btn btn--ghost"
+                hx-post="/api/tools/{{ tid }}/unarchive"
+                hx-swap="none"
+                hx-on::after-request="window.location.reload()"
+                aria-label="Unarchive {{ tid }}">
+          Unarchive
+        </button>
+      </div>
+      {%- endfor %}
+    </div>
+
+    {%- else %}
+    {# ---------- (a) No tools on disk at all ---------- #}
     <div class="pixie-empty__hero">
       <img src="/static/pixie-logo.png"
            alt="Pixie"
@@ -73,6 +108,7 @@
         <span class="mono">tools/example-compound-interest/</span>.
       </span>
     </div>
+    {%- endif %}
 
   </div>
 </div>
