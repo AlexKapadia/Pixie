@@ -117,6 +117,7 @@
     var next = Pixie.isDark() ? "light" : "dark";
     Pixie.setTheme(next);
     Pixie.persistPreference("theme", next);
+    try { localStorage.setItem("pixieTheme", next); } catch (e) {}
   };
 
   // Persist a single Appearance preference (theme / accent / density) to the
@@ -124,6 +125,19 @@
   // next htmx swap re-applies the stale server value via applyPersistedSettings.
   Pixie.persistPreference = function (key, value) {
     if (!key || value == null) return;
+    // Mirror the change into the in-DOM payload script so subsequent htmx
+    // swaps (which never replace the payload tag — sidebar swaps target
+    // #pixie-main-content only) don't revert to a stale value when
+    // applyPersistedSettings re-runs on htmx:afterSettle.
+    try {
+      var el = document.getElementById("pixie-settings-payload");
+      if (el) {
+        var payload = {};
+        try { payload = JSON.parse(el.textContent || el.innerText || "{}"); } catch (e) {}
+        payload[key] = value;
+        el.textContent = JSON.stringify(payload);
+      }
+    } catch (e) {}
     var body = "key=" + encodeURIComponent(key) + "&value=" + encodeURIComponent(value);
     try {
       fetch("/settings/preference", {

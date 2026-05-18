@@ -6,7 +6,10 @@
       class="settings-form"
       hx-post="/settings"
       hx-target="#settings-body"
-      hx-swap="innerHTML">
+      hx-swap="innerHTML"
+      hx-trigger="change, submit"
+      hx-ext="ignore:json-enc"
+      hx-encoding="application/x-www-form-urlencoded">
 
   {% call setting_section('Appearance', icon=icon('sun', 13), description='Theme, accent and density take effect immediately.') %}
     <div class="settings-row">

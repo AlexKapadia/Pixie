@@ -160,7 +160,9 @@
     <div class="settings-row__control">
       <form hx-post="/settings/clear-history"
             hx-confirm="Clear all run history for {{ tool.tool_id }}? This cannot be undone."
-            hx-swap="none">
+            hx-swap="none"
+            hx-ext="ignore:json-enc"
+            hx-encoding="application/x-www-form-urlencoded">
         <input type="hidden" name="tool_id" value="{{ tool.tool_id }}" />
         <button type="submit" class="btn btn--danger">
           {{ icon('trash', 12) }} Clear history
