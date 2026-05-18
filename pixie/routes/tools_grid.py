@@ -339,7 +339,9 @@ def _assert_tool_exists(settings: Settings, tool_id: str) -> None:
 
 
 @router.post(
-    "/api/tools/{tool_id}/archive", status_code=status.HTTP_204_NO_CONTENT
+    "/api/tools/{tool_id}/archive",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
 )
 async def archive_tool_route(tool_id: str, settings: SettingsDep) -> None:
     _assert_tool_exists(settings, tool_id)
@@ -348,7 +350,9 @@ async def archive_tool_route(tool_id: str, settings: SettingsDep) -> None:
 
 
 @router.post(
-    "/api/tools/{tool_id}/unarchive", status_code=status.HTTP_204_NO_CONTENT
+    "/api/tools/{tool_id}/unarchive",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
 )
 async def unarchive_tool_route(tool_id: str, settings: SettingsDep) -> None:
     _assert_tool_exists(settings, tool_id)
@@ -356,7 +360,11 @@ async def unarchive_tool_route(tool_id: str, settings: SettingsDep) -> None:
     await db.unlog_archive(settings.db_path, tool_id)
 
 
-@router.post("/api/tools/{tool_id}/pin", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/api/tools/{tool_id}/pin",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
 async def pin_tool_route(
     tool_id: str, settings: SettingsDep, launcher: LauncherDep
 ) -> None:
@@ -366,7 +374,9 @@ async def pin_tool_route(
 
 
 @router.post(
-    "/api/tools/{tool_id}/unpin", status_code=status.HTTP_204_NO_CONTENT
+    "/api/tools/{tool_id}/unpin",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
 )
 async def unpin_tool_route(
     tool_id: str, settings: SettingsDep, launcher: LauncherDep
@@ -380,7 +390,11 @@ class TagBody(BaseModel):
     tag: str = Field(min_length=1, max_length=32)
 
 
-@router.post("/api/tools/{tool_id}/tags", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/api/tools/{tool_id}/tags",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
 async def add_tag_route(
     tool_id: str, payload: TagBody, settings: SettingsDep
 ) -> None:
@@ -390,7 +404,9 @@ async def add_tag_route(
 
 
 @router.delete(
-    "/api/tools/{tool_id}/tags/{tag}", status_code=status.HTTP_204_NO_CONTENT
+    "/api/tools/{tool_id}/tags/{tag}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
 )
 async def remove_tag_route(
     tool_id: str, tag: str, settings: SettingsDep

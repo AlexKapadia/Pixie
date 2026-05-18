@@ -662,6 +662,14 @@ body.pixie {
   background: var(--bg);
 }
 
+.pixie .main__shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .pixie .main__body {
   flex: 1;
   min-height: 0;

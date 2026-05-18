@@ -11,7 +11,7 @@
     <a class="tools-grid-card__name"
        href="/tool/{{ card.tool_id }}"
        hx-get="/tool/{{ card.tool_id }}"
-       hx-target="#pixie-main-content"
+       hx-target="#pixie-main-shell"
        hx-push-url="true"
        title="{{ card.description }}">{{ card.name }}</a>
     {% if card.status == 'running' %}

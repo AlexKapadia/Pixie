@@ -652,8 +652,9 @@ async def get_run(
         outputs_dropped=outputs_dropped,
         saved_run=True,
     )
-    template_name = "tool_fragment.html" if is_htmx else "tool.html"
-    return templates.TemplateResponse(request, template_name, ctx)
+    # Always render the full page; htmx extracts #pixie-main-shell from
+    # the response and swaps header + body together (see base.html).
+    return templates.TemplateResponse(request, "tool.html", ctx)
 
 
 async def _sidebar_for_replay(

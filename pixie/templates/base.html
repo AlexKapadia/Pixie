@@ -135,12 +135,17 @@
     <div class="app-shell" x-data="{ sidebarCollapsed: false }">
       {% include "partials/sidebar.html" %}
       <div class="main">
-        {% block main %}
-          {% block header %}{% endblock %}
-          <div class="main__body" id="pixie-main-content">
-            {% block body %}{% endblock %}
-          </div>
-        {% endblock %}
+        {# pixie-main-shell wraps header + body so a single htmx swap on
+           sidebar navigation replaces both — header always reflects the
+           page you just landed on, no per-page OOB swap needed. #}
+        <div id="pixie-main-shell" class="main__shell">
+          {% block main %}
+            {% block header %}{% endblock %}
+            <div class="main__body" id="pixie-main-content">
+              {% block body %}{% endblock %}
+            </div>
+          {% endblock %}
+        </div>
         <footer class="main__footer">
           <span>pixie</span>
           <span class="sep">·</span>

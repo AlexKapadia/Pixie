@@ -378,11 +378,8 @@ async def tool_view(
         last_outputs=None,
     )
 
-    # htmx fragment swap: return just the header + body so the existing
-    # sidebar stays put. The fragment template renders into the same
-    # #pixie-main-content slot but skips <html>/<head>.
-    if request.headers.get("hx-request", "").lower() == "true":
-        return templates.TemplateResponse(request, "tool_fragment.html", ctx)
+    # Always render the full page; htmx extracts #pixie-main-shell from
+    # the response and swaps header + body together (see base.html).
     return templates.TemplateResponse(request, "tool.html", ctx)
 
 

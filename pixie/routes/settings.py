@@ -244,12 +244,9 @@ async def global_settings_page(
         themes=THEMES,
         revalidate_status=getattr(request.app.state, "revalidate_status", None),
     )
-    template = (
-        "partials/settings_page_fragment.html"
-        if request.headers.get("hx-request", "").lower() == "true"
-        else "settings.html"
-    )
-    return templates.TemplateResponse(request, template, ctx)
+    # Always render the full page; htmx extracts #pixie-main-shell from
+    # the response and swaps header + body together (see base.html).
+    return templates.TemplateResponse(request, "settings.html", ctx)
 
 
 # Allowlist of preference keys writable through /settings/preference, with the
@@ -663,12 +660,9 @@ async def tool_settings_page(
     ctx = _tool_view_context(
         request, settings, persisted, tool, sidebar, overrides, last_report
     )
-    template = (
-        "partials/tool_settings_body.html"
-        if request.headers.get("hx-request", "").lower() == "true"
-        else "tool_settings.html"
-    )
-    return templates.TemplateResponse(request, template, ctx)
+    # Always render the full page; htmx extracts #pixie-main-shell from
+    # the response and swaps header + body together (see base.html).
+    return templates.TemplateResponse(request, "tool_settings.html", ctx)
 
 
 @router.post("/tool/{tool_id}/secrets/{key}", response_class=HTMLResponse)

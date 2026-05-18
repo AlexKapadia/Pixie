@@ -117,7 +117,11 @@ async def patch_workspace_route(
     return await _workspace_summary(settings.db_path, row)
 
 
-@router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{workspace_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
 async def delete_workspace_route(workspace_id: int, settings: SettingsDep) -> None:
     rows = await db.list_workspaces(settings.db_path)
     if not any(r["id"] == workspace_id for r in rows):
@@ -126,7 +130,9 @@ async def delete_workspace_route(workspace_id: int, settings: SettingsDep) -> No
 
 
 @router.post(
-    "/{workspace_id}/tools/{tool_id}", status_code=status.HTTP_204_NO_CONTENT
+    "/{workspace_id}/tools/{tool_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
 )
 async def add_tool_to_workspace_route(
     workspace_id: int, tool_id: str, settings: SettingsDep
@@ -138,7 +144,9 @@ async def add_tool_to_workspace_route(
 
 
 @router.delete(
-    "/{workspace_id}/tools/{tool_id}", status_code=status.HTTP_204_NO_CONTENT
+    "/{workspace_id}/tools/{tool_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
 )
 async def remove_tool_from_workspace_route(
     workspace_id: int, tool_id: str, settings: SettingsDep
@@ -149,7 +157,11 @@ async def remove_tool_from_workspace_route(
     await db.remove_tool_from_workspace(settings.db_path, tool_id, workspace_id)
 
 
-@router.post("/{workspace_id}/activate", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/{workspace_id}/activate",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
 async def activate_workspace_route(
     workspace_id: int, settings: SettingsDep
 ) -> None:
