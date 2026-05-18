@@ -889,6 +889,10 @@ body.pixie {
   grid-template-columns: 360px 1fr;
 }
 
+@media (max-width: 900px) {
+  .pixie .tool-body[data-layout="form"] { grid-template-columns: 1fr; }
+}
+
 .pixie .tool-body[data-layout="split"] {
   display: flex; flex-direction: column;
 }

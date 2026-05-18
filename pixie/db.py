@@ -1120,6 +1120,14 @@ async def register_artefact(
     tags: list[str] | None = None,
     thumb_path: str | None = None,
 ) -> int:
+    # `_pixie_run_outputs` is reserved for the internal run-outputs.json
+    # artefact (registered with output_key="_pixie_run_outputs"). Reject any
+    # other caller that tries to claim it.
+    if tags and "_pixie_run_outputs" in tags and output_key != "_pixie_run_outputs":
+        raise ValueError(
+            "tag '_pixie_run_outputs' is reserved for Pixie's internal "
+            "run-outputs artefact and cannot be set by tools or callers"
+        )
     return await run_in_threadpool(
         _sync_register_artefact, db_path,
         run_id=run_id, tool_id=tool_id, output_key=output_key,
