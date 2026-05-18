@@ -213,13 +213,9 @@ def _base_context(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/settings", response_class=HTMLResponse)
-async def global_settings_page(
-    request: Request,
-    settings: SettingsDep,
-    launcher: LauncherDep,
-    templates: TemplatesDep,
-) -> HTMLResponse:
+async def _build_global_settings_context(
+    request: Request, settings: Settings, launcher: Launcher
+) -> dict[str, Any]:
     sidebar = await _sidebar_payload(settings, launcher)
     persisted = await load_global_settings(settings)
     discovered: list[DiscoveredTool] = sidebar["discovered"]
@@ -244,6 +240,17 @@ async def global_settings_page(
         themes=THEMES,
         revalidate_status=getattr(request.app.state, "revalidate_status", None),
     )
+    return ctx
+
+
+@router.get("/settings", response_class=HTMLResponse)
+async def global_settings_page(
+    request: Request,
+    settings: SettingsDep,
+    launcher: LauncherDep,
+    templates: TemplatesDep,
+) -> HTMLResponse:
+    ctx = await _build_global_settings_context(request, settings, launcher)
     # Always render the full page; htmx extracts #pixie-main-shell from
     # the response and swaps header + body together (see base.html).
     return templates.TemplateResponse(request, "settings.html", ctx)
@@ -473,7 +480,16 @@ async def save_global_settings(
     settings.accent = accent
     settings.density = density  # type: ignore[assignment]
 
-    response = await global_settings_page(request, settings, launcher, templates)
+    # The form posts here with hx-target="#settings-body" hx-swap="innerHTML".
+    # Return only the body fragment so we don't swap a duplicate sidebar/header
+    # into the settings shell. Non-htmx submits get the full page.
+    ctx = await _build_global_settings_context(request, settings, launcher)
+    if request.headers.get("hx-request", "").lower() == "true":
+        response = templates.TemplateResponse(
+            request, "partials/settings_global_body.html", ctx
+        )
+    else:
+        response = templates.TemplateResponse(request, "settings.html", ctx)
     response.headers.update(_toast_header("Settings saved."))
     return response
 

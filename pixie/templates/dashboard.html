@@ -40,7 +40,7 @@
               <a class="welcome__recent-link"
                  href="/tool/{{ run.tool_id }}?run={{ run.run_id }}"
                  hx-get="/tool/{{ run.tool_id }}?run={{ run.run_id }}"
-                 hx-target="#pixie-main-shell"
+                 hx-target="#pixie-main-shell" hx-select="#pixie-main-shell"
                  hx-swap="innerHTML"
                  hx-push-url="true">
                 <span class="welcome__recent-name">{{ run.tool_name or run.tool_id }}</span>

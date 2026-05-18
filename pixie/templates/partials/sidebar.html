@@ -37,7 +37,7 @@
     <a class="tool-row tool-row--library{% if active_tool_id == '__library__' %} is-active{% endif %}"
        href="/library"
        hx-get="/library"
-       hx-target="#pixie-main-shell"
+       hx-target="#pixie-main-shell" hx-select="#pixie-main-shell"
        hx-swap="innerHTML"
        hx-push-url="true"
        title="All saved outputs across every tool">
@@ -58,7 +58,7 @@
           <a class="tool-row{% if active_tool_id == entry.tool_id %} is-active{% endif %}"
              href="/tool/{{ entry.tool_id }}"
              hx-get="/tool/{{ entry.tool_id }}"
-             hx-target="#pixie-main-shell"
+             hx-target="#pixie-main-shell" hx-select="#pixie-main-shell"
              hx-swap="innerHTML"
              hx-push-url="true"
              data-tool-id="{{ entry.tool_id }}"
@@ -83,7 +83,7 @@
           <a class="tool-row{% if active_tool_id == entry.tool_id %} is-active{% endif %}"
              href="/tool/{{ entry.tool_id }}"
              hx-get="/tool/{{ entry.tool_id }}"
-             hx-target="#pixie-main-shell"
+             hx-target="#pixie-main-shell" hx-select="#pixie-main-shell"
              hx-swap="innerHTML"
              hx-push-url="true"
              data-tool-id="{{ entry.tool_id }}"
@@ -111,7 +111,7 @@
               <a class="tool-row{% if active_tool_id == tool_entry.tool_id %} is-active{% endif %}"
                  href="/tool/{{ tool_entry.tool_id }}"
                  hx-get="/tool/{{ tool_entry.tool_id }}"
-                 hx-target="#pixie-main-shell"
+                 hx-target="#pixie-main-shell" hx-select="#pixie-main-shell"
                  hx-swap="innerHTML"
                  hx-push-url="true"
                  data-tool-id="{{ tool_entry.tool_id }}"
@@ -124,13 +124,13 @@
                   <span class="tool-row__validation tool-row__validation--warn">warn</span>
                 {% endif %}
                 {% if tool_entry.status == 'running' %}
-                  <span class="dot dot--running dot--pulse" aria-label="running"></span>
+                  <span id="sidebar-dot-{{ tool_entry.tool_id }}" class="dot dot--running dot--pulse" aria-label="running"></span>
                 {% elif tool_entry.status == 'failed' %}
-                  <span class="dot dot--error" aria-label="failed"></span>
+                  <span id="sidebar-dot-{{ tool_entry.tool_id }}" class="dot dot--error" aria-label="failed"></span>
                 {% elif tool_entry.status == 'warm' %}
-                  <span class="dot dot--dormant" aria-label="warm"></span>
+                  <span id="sidebar-dot-{{ tool_entry.tool_id }}" class="dot dot--dormant" aria-label="warm"></span>
                 {% else %}
-                  <span class="dot dot--dormant" aria-label="dormant"></span>
+                  <span id="sidebar-dot-{{ tool_entry.tool_id }}" class="dot dot--dormant" aria-label="dormant"></span>
                 {% endif %}
               </a>
             {% endfor %}
@@ -152,13 +152,13 @@
     <div class="sidebar__archived-toggle">
       <a href="/tools"
          hx-get="/tools"
-         hx-target="#pixie-main-shell"
+         hx-target="#pixie-main-shell" hx-select="#pixie-main-shell"
          hx-push-url="true"
          class="t-meta">{{ icon('list', 11) }} All tools</a>
       {% if archived_count and archived_count > 0 %}
         <a href="/tools?archived=1"
            hx-get="/tools?archived=1"
-           hx-target="#pixie-main-shell"
+           hx-target="#pixie-main-shell" hx-select="#pixie-main-shell"
            hx-push-url="true"
            class="t-meta">Show archived ({{ archived_count }})</a>
       {% endif %}
@@ -183,7 +183,7 @@
     <a class="btn btn--ghost btn--icon btn--sm"
        href="/settings"
        hx-get="/settings"
-       hx-target="#pixie-main-shell"
+       hx-target="#pixie-main-shell" hx-select="#pixie-main-shell"
        hx-push-url="true"
        title="Settings"
        aria-label="Settings">

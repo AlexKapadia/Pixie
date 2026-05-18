@@ -71,7 +71,7 @@
     <a class="btn btn--ghost btn--icon" title="Tool settings"
        href="/tool/{{ tool.tool_id }}/settings"
        hx-get="/tool/{{ tool.tool_id }}/settings"
-       hx-target="#pixie-main-shell"
+       hx-target="#pixie-main-shell" hx-select="#pixie-main-shell"
        hx-push-url="true">
       {{ icon('settings') }}
     </a>
