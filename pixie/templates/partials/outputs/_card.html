@@ -98,3 +98,27 @@
   <span class="t-meta">{{ message }}</span>
 </div>
 {%- endmacro -%}
+
+{# Export dropdown -- hits the run-output formats endpoint (5.1).
+   Renders only when run_id is known (saved run / completed run). Format
+   list is fetched on first open via Pixie.loadExportFormats. #}
+{%- macro export_dropdown(spec, type, run_id) -%}
+{%- if run_id -%}
+<div class="output-card__export" x-data="{ open: false }">
+  <button type="button" class="btn btn--ghost btn--sm"
+          @click="open = !open; if (open) Pixie.loadExportFormats($el.closest('.output-card'))"
+          data-pixie-export
+          data-output-key="{{ spec.key }}"
+          data-output-type="{{ type }}"
+          data-run-id="{{ run_id }}"
+          data-formats-url="/api/runs/{{ run_id }}/outputs/{{ spec.key }}/formats"
+          data-export-url="/api/runs/{{ run_id }}/outputs/{{ spec.key }}/export"
+          aria-haspopup="menu"
+          aria-label="Export {{ spec.label or spec.key }}">
+    Export
+  </button>
+  <div class="output-card__export-menu" x-show="open" x-transition.opacity x-cloak
+       @click.outside="open = false" role="menu"></div>
+</div>
+{%- endif -%}
+{%- endmacro -%}

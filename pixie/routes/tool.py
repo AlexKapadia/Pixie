@@ -295,9 +295,10 @@ async def run_tool(
         db.prune_old_runs_per_tool(settings.db_path, tool.tool_id, keep=100)
     )
 
-    # Render outputs.
+    # Render outputs. Thread run_id so output partials can build per-run
+    # export URLs via the export_dropdown macro.
     render_outputs = request.app.state.templates.env.globals["render_outputs"]
-    outputs_html = str(render_outputs(tool.schema.outputs, body))
+    outputs_html = str(render_outputs(tool.schema.outputs, body, run_id=run_id))
 
     recent_runs = await db.list_runs_with_inputs(
         settings.db_path, tool.tool_id, limit=10
@@ -612,40 +613,45 @@ async def get_run(
                 'This run\'s outputs exceeded the 1MB cap and were not stored. '
                 'Re-run with the same inputs to regenerate.</span></div>'
             )
-        return HTMLResponse(str(render_outputs(tool.schema.outputs, outputs or {})))
+        return HTMLResponse(str(render_outputs(
+            tool.schema.outputs, outputs or {}, run_id=run_id,
+        )))
 
-    # Full tool view re-render — defer to dashboard's tool-view machinery.
-    from pixie.routes.dashboard import tool_view  # local import to avoid cycle
-
-    response = await tool_view(
-        tool_id=tool.tool_id, request=request,
-        settings=settings, launcher=launcher, templates=templates,
+    # Full tool view re-render — build context through the same helpers
+    # the live tool view uses so the sidebar + base context match exactly.
+    from pixie.routes.dashboard import (  # local: avoid cycle
+        _base_context, _sidebar_context, _runtime_status,
     )
-    # The dashboard's tool_view does not yet take last_inputs / last_outputs;
-    # for the replay we re-render after injecting them.
-    sidebar = await _sidebar_for_replay(settings, launcher)
-    setattr(tool, "status", "dormant" if not launcher.is_running(tool.tool_id) else "running")
+
+    sidebar = await _sidebar_context(settings, launcher)
+    setattr(tool, "status", _runtime_status(launcher, tool))
     setattr(tool, "has_required_secrets_missing", False)
     setattr(tool, "port", None)
     setattr(tool, "pid", None)
-    ctx = {
-        "request": request,
-        "theme": settings.theme,
-        "version": "0.1.0",
-        "port": settings.port,
-        "developer_mode": settings.developer_mode,
-        "sidebar_groups": sidebar["sidebar_groups"],
-        "running_count": sidebar["running_count"],
-        "active_tool_id": tool.tool_id,
-        "tool": tool,
-        "recent_runs": await db.list_runs_with_inputs(
+
+    ctx = _base_context(request, settings)
+    ctx.update(
+        sidebar_groups=sidebar["sidebar_groups"],
+        running_count=sidebar["running_count"],
+        sidebar_workspaces=sidebar.get("sidebar_workspaces", []),
+        active_workspace_id=sidebar.get("active_workspace_id"),
+        active_workspace_name=sidebar.get("active_workspace_name"),
+        sidebar_favourites=sidebar.get("sidebar_favourites", []),
+        sidebar_recent=sidebar.get("sidebar_recent", []),
+        archived_count=sidebar.get("archived_count", 0),
+        archived_tool_ids=sidebar.get("archived_tool_ids", []),
+        sidebar_total_tools=sidebar.get("sidebar_total_tools", 0),
+        active_tool_id=tool.tool_id,
+        tool=tool,
+        recent_runs=await db.list_runs_with_inputs(
             settings.db_path, tool.tool_id, limit=10
         ),
-        "last_inputs": last_inputs,
-        "last_outputs": outputs if not outputs_dropped else None,
-        "viewing_run_id": run_id,
-        "outputs_dropped": outputs_dropped,
-    }
+        last_inputs=last_inputs,
+        last_outputs=outputs if not outputs_dropped else None,
+        viewing_run_id=run_id,
+        outputs_dropped=outputs_dropped,
+        saved_run=True,
+    )
     template_name = "tool_fragment.html" if is_htmx else "tool.html"
     return templates.TemplateResponse(request, template_name, ctx)
 

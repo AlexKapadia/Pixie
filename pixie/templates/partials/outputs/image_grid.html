@@ -1,5 +1,6 @@
-{%- from 'partials/outputs/_card.html' import output_card, empty_state -%}
-{% call output_card(spec, panel_id, 'image_grid') %}
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, export_dropdown -%}
+{% set actions %}{% if has_value %}{{ export_dropdown(spec, 'image_grid', run_id) }}{% endif %}{% endset %}
+{% call output_card(spec, panel_id, 'image_grid', actions=actions) %}
   <div class="output-card__body">
     {% if has_value %}
       {% set imgs = value.images if value is mapping and 'images' in value else value %}

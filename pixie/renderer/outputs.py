@@ -92,13 +92,21 @@ def _spec_dict(spec: Any) -> dict[str, Any]:
     }
 
 
-def render_output(spec: Any, value: Any | None = None) -> Markup:
+def render_output(
+    spec: Any,
+    value: Any | None = None,
+    *,
+    run_id: str | None = None,
+) -> Markup:
     """Render a single output spec to HTML by dispatching to its partial.
 
     A missing partial falls back to a ``text`` rendering of the value
     (rather than a build-time error) so a new output type added in
     ``discovery.py`` without a partial still surfaces something useful
     instead of an empty page.
+
+    ``run_id`` (5.1) is threaded into the template so the export-dropdown
+    macro can build per-run export URLs.
     """
 
     spec_d = _spec_dict(spec)
@@ -120,12 +128,16 @@ def render_output(spec: Any, value: Any | None = None) -> Markup:
         value=value,
         has_value=has_value,
         panel_id=_panel_id(spec_d["key"]),
+        run_id=run_id,
     )
     return Markup(rendered)
 
 
 def render_outputs(
-    specs: Iterable[Any], values: dict[str, Any] | None = None
+    specs: Iterable[Any],
+    values: dict[str, Any] | None = None,
+    *,
+    run_id: str | None = None,
 ) -> Markup:
     """Render every output spec respecting ``panel`` / ``tab`` / ``inline`` layouts.
 
@@ -156,13 +168,16 @@ def render_outputs(
             return
         layout = group_layout or "panel"
         if layout == "tab":
-            parts.append(_render_tabs(group, values_map))
+            parts.append(_render_tabs(group, values_map, run_id=run_id))
         elif layout == "inline":
-            parts.append(_render_inline(group, values_map))
+            parts.append(_render_inline(group, values_map, run_id=run_id))
         else:
             for spec, spec_d in group:
                 parts.append(
-                    str(render_output(spec, values_map.get(spec_d["key"])))
+                    str(render_output(
+                        spec, values_map.get(spec_d["key"]),
+                        run_id=run_id,
+                    ))
                 )
         group.clear()
 
@@ -183,13 +198,18 @@ def render_outputs(
 
 
 def _render_tabs(
-    group: list[tuple[Any, dict[str, Any]]], values_map: dict[str, Any]
+    group: list[tuple[Any, dict[str, Any]]],
+    values_map: dict[str, Any],
+    *,
+    run_id: str | None = None,
 ) -> str:
     """Render a tab strip + panels for consecutive tab-layout outputs."""
 
     if len(group) == 1:
         spec, spec_d = group[0]
-        return str(render_output(spec, values_map.get(spec_d["key"])))
+        return str(render_output(
+            spec, values_map.get(spec_d["key"]), run_id=run_id,
+        ))
 
     tabs_html: list[str] = []
     panels_html: list[str] = []
@@ -206,7 +226,7 @@ def _render_tabs(
         hidden = "" if index == 0 else 'hidden style="display:none;"'
         panels_html.append(
             f'<div id="{_panel_id(spec_d["key"])}-tab" role="tabpanel" {hidden}>'
-            f"{render_output(spec, values_map.get(spec_d['key']))}"
+            f"{render_output(spec, values_map.get(spec_d['key']), run_id=run_id)}"
             f"</div>"
         )
     return (
@@ -218,13 +238,16 @@ def _render_tabs(
 
 
 def _render_inline(
-    group: list[tuple[Any, dict[str, Any]]], values_map: dict[str, Any]
+    group: list[tuple[Any, dict[str, Any]]],
+    values_map: dict[str, Any],
+    *,
+    run_id: str | None = None,
 ) -> str:
     """Render side-by-side panels for consecutive inline-layout outputs."""
 
     cells = [
         f'<div class="output-inline__cell">'
-        f"{render_output(spec, values_map.get(spec_d['key']))}"
+        f"{render_output(spec, values_map.get(spec_d['key']), run_id=run_id)}"
         f"</div>"
         for spec, spec_d in group
     ]

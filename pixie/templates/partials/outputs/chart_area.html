@@ -1,5 +1,5 @@
-{%- from 'partials/outputs/_card.html' import output_card, empty_state, expand_button -%}
-{% set actions %}{% if has_value %}{{ expand_button() }}{% endif %}{% endset %}
+{%- from 'partials/outputs/_card.html' import output_card, empty_state, expand_button, export_dropdown -%}
+{% set actions %}{% if has_value %}{{ export_dropdown(spec, 'chart_area', run_id) }}{% endif %}{% if has_value %}{{ expand_button() }}{% endif %}{% endset %}
 {% call output_card(spec, panel_id, 'chart_area', actions=actions) %}
   <div class="output-card__body">
     {% if has_value %}

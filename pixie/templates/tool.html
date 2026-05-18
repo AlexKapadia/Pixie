@@ -7,8 +7,36 @@
 {% endblock %}
 
 {% block body %}
+  {% if saved_run %}
+    {# Saved-run pill bar (5.4). Read-only view of a past run; primary Run
+       button is disabled. TODO: wire Re-run button to clear saved_run and
+       re-enable the run form in JS once handler lands. #}
+    <div class="saved-run-pillbar" role="status" aria-live="polite">
+      <span class="badge badge--muted">Saved run</span>
+      {% if viewing_run_id %}
+        <span class="mono t-meta">{{ viewing_run_id[:8] }}</span>
+      {% endif %}
+      <span style="flex:1"></span>
+      <a class="btn btn--ghost btn--sm"
+         href="/library?tool={{ tool.tool_id }}"
+         aria-label="Back to Library">
+        Back to Library
+      </a>
+      <button type="button"
+              class="btn btn--primary btn--sm"
+              data-pixie-rerun
+              data-tool-id="{{ tool.tool_id }}"
+              data-run-id="{{ viewing_run_id or '' }}"
+              aria-label="Re-run this saved run">
+        Re-run
+      </button>
+    </div>
+  {% endif %}
+
   {# Tool body: form / chat / split layout chosen via data-layout. #}
-  <div class="tool-body" data-layout="{{ tool.schema.layout }}">
+  <div class="tool-body"
+       data-layout="{{ tool.schema.layout }}"
+       {% if saved_run %}data-readonly="1"{% endif %}>
     {% if tool.schema.layout == 'form' or tool.schema.layout == 'split' %}
       <section class="panel-col panel-col--inputs">
         <div class="panel-col__header">
@@ -32,7 +60,9 @@
         <div class="panel-col__footer">
           <span id="run-spinner" class="htmx-indicator t-meta">Running…</span>
           <span style="flex:1"></span>
-          <button type="submit" form="run-form" class="btn btn--primary">
+          <button type="submit" form="run-form" class="btn btn--primary"
+                  {% if saved_run %}disabled aria-disabled="true"
+                  title="Viewing a saved run. Click Re-run above to run again."{% endif %}>
             {{ icon('play', 12) }} Run
           </button>
         </div>
@@ -41,7 +71,7 @@
       <section class="panel-col panel-col--outputs">
         <div id="output-panel" class="panel-col__body">
           {% if last_outputs %}
-            {{ render_outputs(tool.schema.outputs, last_outputs) | safe }}
+            {{ render_outputs(tool.schema.outputs, last_outputs, run_id=viewing_run_id) | safe }}
           {% else %}
             <div class="output-empty">
               Run the tool to see outputs here.
