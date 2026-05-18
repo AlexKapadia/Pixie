@@ -7,16 +7,14 @@ the fallback format.
 
 from __future__ import annotations
 
-import asyncio
 import io
 import json
 import logging
 import zipfile
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 

@@ -8,7 +8,6 @@ import json
 from typing import Any
 
 from pixie.exporters import (
-    ExporterError,
     ExporterMissingDependency,
     register_exporter,
 )

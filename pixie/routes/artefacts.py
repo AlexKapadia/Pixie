@@ -7,14 +7,13 @@ routes which use the shorter ``/artefacts/{id}/file`` paths so the
 
 from __future__ import annotations
 
-import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from pixie import artefacts, db

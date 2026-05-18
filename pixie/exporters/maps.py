@@ -14,7 +14,6 @@ from typing import Any
 from pixie.exporters import (
     ExporterDegraded,
     ExporterError,
-    ExporterMissingDependency,
     register_exporter,
 )
 from pixie.exporters._common import coerce_value, json_default

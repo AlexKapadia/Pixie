@@ -39,12 +39,9 @@ from pydantic import BaseModel, ValidationError
 from pixie import db
 from pixie.comparators import (
     FixtureResult,
-    ReferenceFixture,
-    ToleranceConfig,
     deep_compare,
     format_diff_report,
     format_skip_report,
-    list_reference_fixtures,
     load_fixtures,
     load_tolerance_yaml,
 )

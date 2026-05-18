@@ -9,15 +9,13 @@ from __future__ import annotations
 import html
 import io
 import json
-from pathlib import Path
 from typing import Any
 
 from pixie.exporters import (
-    ExporterError,
     ExporterMissingDependency,
     register_exporter,
 )
-from pixie.exporters._common import coerce_path, coerce_value, html_shell
+from pixie.exporters._common import coerce_value, html_shell
 
 
 # --- text --------------------------------------------------------------------

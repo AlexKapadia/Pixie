@@ -28,7 +28,6 @@ Error contract:
 from __future__ import annotations
 
 import importlib
-import json
 import logging
 import pkgutil
 import re
