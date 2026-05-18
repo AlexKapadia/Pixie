@@ -187,7 +187,7 @@ def _plot_network(nodes, edges, go):
 # --- exporters ---------------------------------------------------------------
 
 
-def _to_static(raw, *, prov, output_key, spec, chart_type, fmt) -> tuple[bytes, str]:
+def _to_static(raw, *, prov, output_key, spec, chart_type, fmt, **_ignored) -> tuple[bytes, str]:
     spec_data = coerce_value(raw) or {}
     if not isinstance(spec_data, dict):
         spec_data = {"value": spec_data}

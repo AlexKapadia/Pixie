@@ -143,6 +143,136 @@ async def export_artefact_post(
     )
 
 
+# --- per-run-output export (4.6) --------------------------------------------
+
+
+def _infer_run_output_type(value: Any) -> str:
+    """Best-effort output type inference for inline run outputs.
+
+    The run row stores raw outputs without their declared type. We probe
+    common shapes; the export pipeline accepts an explicit override via
+    ``output_type=`` for callers who know better.
+    """
+
+    if isinstance(value, dict):
+        if "_artefact_id" in value:
+            return value.get("output_type") or "file"
+        if "data" in value and "layout" in value:
+            # plotly figure dict
+            return "chart_line"
+        if "columns" in value and "rows" in value:
+            return "table"
+        return "kv"
+    if isinstance(value, list):
+        if value and all(isinstance(r, dict) for r in value):
+            return "table"
+        return "kv"
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, (int, float)):
+        return "number"
+    return "text"
+
+
+async def _resolve_run_output(
+    settings: Settings, run_id: str, output_key: str
+) -> tuple[dict[str, Any], Any]:
+    run_row = await db.get_run(settings.db_path, run_id)
+    if run_row is None:
+        raise HTTPException(404, f"run {run_id} not found")
+    if not run_row.get("outputs_json"):
+        raise HTTPException(404, "run has no outputs")
+    try:
+        envelope = json.loads(run_row["outputs_json"])
+    except json.JSONDecodeError as exc:
+        raise HTTPException(422, f"run outputs are not valid JSON: {exc}") from exc
+    outputs = envelope.get("outputs") if isinstance(envelope, dict) else None
+    if not isinstance(outputs, dict):
+        raise HTTPException(404, "run outputs do not contain an 'outputs' map")
+    if output_key not in outputs:
+        raise HTTPException(404, f"output {output_key!r} not found in run")
+    return run_row, outputs[output_key]
+
+
+@router.get("/api/runs/{run_id}/outputs/{output_key}/formats")
+async def supported_formats_for_run_output(
+    run_id: str,
+    output_key: str,
+    settings: SettingsDep,
+    output_type: str | None = None,
+) -> dict[str, Any]:
+    """Return the list of format ids the exporter supports for this output."""
+
+    _run_row, value = await _resolve_run_output(settings, run_id, output_key)
+    type_ = output_type or _infer_run_output_type(value)
+    try:
+        formats = exporters.supported_formats(type_)
+        default = exporters.default_format(type_)
+    except ExporterUnsupported:
+        formats = []
+        default = None
+    return {
+        "run_id": run_id,
+        "output_key": output_key,
+        "output_type": type_,
+        "default": default,
+        "supported": formats,
+    }
+
+
+@router.get("/api/runs/{run_id}/outputs/{output_key}/export")
+async def export_run_output(
+    run_id: str,
+    output_key: str,
+    settings: SettingsDep,
+    registry: RegistryDep,
+    format: str | None = None,
+    output_type: str | None = None,
+) -> Response:
+    """Export ONE inline output from a run as bytes with proper headers."""
+
+    run_row, value = await _resolve_run_output(settings, run_id, output_key)
+    type_ = output_type or _infer_run_output_type(value)
+
+    # When the value is a reference-handle to an artefact, defer to the
+    # artefact exporter so we stream the real file rather than the handle.
+    if isinstance(value, dict) and value.get("_artefact_id"):
+        return await export_artefact(
+            int(value["_artefact_id"]), settings, registry,
+            format=format, output_type=output_type or type_,
+        )
+
+    raw = value if isinstance(value, dict) else {"value": value}
+    try:
+        payload, filename = await exporters.export(
+            raw, type_, format=format,
+            output_key=output_key,
+            tool_id=run_row.get("tool_id"),
+            run_id=run_id,
+        )
+    except ExporterDegraded as exc:
+        media = "text/html; charset=utf-8" if exc.actual_format == "html" else "application/octet-stream"
+        return Response(
+            content=exc.payload,
+            media_type=media,
+            headers={
+                "Content-Disposition": f'attachment; filename="{exc.filename}"',
+                "X-Pixie-Export-Degraded": exc.actual_format,
+                "X-Pixie-Export-Message": str(exc)[:255],
+            },
+        )
+    except ExporterMissingDependency as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except ExporterUnsupported as exc:
+        raise HTTPException(415, str(exc)) from exc
+    except ExporterError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return Response(
+        content=payload, media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/api/artefacts/{artefact_id}/formats")
 async def supported_formats_for_artefact(
     artefact_id: int,

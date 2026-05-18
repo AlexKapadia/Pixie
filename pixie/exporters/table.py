@@ -16,15 +16,55 @@ from pixie.exporters._common import coerce_value, csv_scalar, json_default, html
 
 
 def _rows_and_columns(raw: Any, spec: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
+    """Accept BOTH ``{columns, rows}`` and ``list[dict]`` shapes.
+
+    - ``{"columns": [...], "rows": [...]}`` — explicit columns list.
+      ``columns`` may be either a list of strings (header keys) or a list
+      of column-spec dicts (``{"key": ..., "label": ...}``). When ``rows``
+      is a list of lists, they're zipped to dicts using the columns.
+    - ``{"rows": [{...}, ...]}`` — rows-only dict.
+    - ``list[dict]`` — bare list of row dicts.
+    """
+
     value = coerce_value(raw)
     rows: list[dict[str, Any]] = []
-    if isinstance(value, dict) and "rows" in value:
-        rows = list(value["rows"] or [])
+    inline_columns: list[str] | None = None
+
+    if isinstance(value, dict):
+        raw_rows = value.get("rows")
+        raw_cols = value.get("columns")
+        if isinstance(raw_cols, list) and raw_cols:
+            if all(isinstance(c, dict) for c in raw_cols):
+                inline_columns = [
+                    str(c.get("key") or c.get("label") or "")
+                    for c in raw_cols
+                ]
+            else:
+                inline_columns = [str(c) for c in raw_cols]
+            inline_columns = [c for c in inline_columns if c]
+        if isinstance(raw_rows, list):
+            for r in raw_rows:
+                if isinstance(r, dict):
+                    rows.append(r)
+                elif isinstance(r, (list, tuple)) and inline_columns:
+                    rows.append({
+                        inline_columns[i]: v
+                        for i, v in enumerate(r)
+                        if i < len(inline_columns)
+                    })
     elif isinstance(value, list):
-        rows = list(value)
-    columns_spec = spec.get("columns")
+        for r in value:
+            if isinstance(r, dict):
+                rows.append(r)
+
+    columns_spec = spec.get("columns") if isinstance(spec, dict) else None
     if columns_spec:
-        columns = [c.get("key") for c in columns_spec if isinstance(c, dict)]
+        columns = [
+            c.get("key") for c in columns_spec
+            if isinstance(c, dict) and c.get("key")
+        ]
+    elif inline_columns:
+        columns = inline_columns
     elif rows:
         columns = list(rows[0].keys())
     else:
