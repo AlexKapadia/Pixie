@@ -1515,4 +1515,6 @@ def update_reference_fixtures_sync(
 
     return asyncio.run(update_reference_fixtures(
         tool_path,
-        fixture_filter
+        fixture_filter=fixture_filter,
+        dry_run=dry_run,
+    ))
