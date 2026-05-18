@@ -245,7 +245,7 @@ async def global_settings_page(
         revalidate_status=getattr(request.app.state, "revalidate_status", None),
     )
     template = (
-        "partials/settings_global_body.html"
+        "partials/settings_page_fragment.html"
         if request.headers.get("hx-request", "").lower() == "true"
         else "settings.html"
     )

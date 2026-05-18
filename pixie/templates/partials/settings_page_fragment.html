@@ -1,0 +1,19 @@
+{# htmx fragment for /settings — includes the same shell wrapper that
+   settings.html uses, so the form's hx-target="#settings-body" works
+   after a sidebar swap and the layout matches a hard-refresh of the
+   page. Header is left alone (block header is outside #pixie-main-content). #}
+<header class="header" hx-swap-oob="outerHTML:header.header">
+  <div class="header__main">
+    <div class="header__title-row">
+      <span class="icon-slot">{% from 'partials/icons.html' import icon %}{{ icon('settings', 14) }}</span>
+      <h1 class="t-h5">Settings</h1>
+      <span class="badge">Local · this machine only</span>
+    </div>
+    <div class="header__meta">
+      <span>Everything below persists in <span class="mono">pixie.db</span> and applies immediately.</span>
+    </div>
+  </div>
+</header>
+<div id="settings-body" class="settings-shell">
+  {% include "partials/settings_global_body.html" %}
+</div>
