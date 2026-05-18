@@ -1,0 +1,58 @@
+name: Playwright
+
+# Heavy browser-based tests. Kept in its own workflow so the cheap CI
+# (ci.yml) stays fast and green-or-red on its own. Marked as
+# continue-on-error at the job level: see comment on `continue-on-error`
+# below.
+
+on:
+  push:
+    branches: [main, master-prompt-fixes]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: playwright-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 9.6 — Every scaffold template must run inside an 800x600 viewport
+  # without a vertical scrollbar. Each template is scaffolded into a tmp
+  # tools dir, Pixie is booted against it, and the test asserts
+  # document.documentElement.scrollHeight <= window.innerHeight + 1.
+  #
+  # continue-on-error: true — this test is intentionally tolerant in CI
+  # while the scaffolds are still being density-tuned. Run failures will
+  # show up in the workflow tab as a warning, not a hard red. Flip to
+  # false once the scaffolds are stable.
+  scroll-height:
+    name: scroll-height per template (9.6)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      PIXIE_RUN_HEAVY_TESTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install project + dev deps
+        run: uv sync --frozen --extra accuracy --group dev || uv sync --extra accuracy --group dev
+
+      - name: Install Chromium for Playwright (with OS deps)
+        # --with-deps pulls the apt packages Chromium needs on Ubuntu
+        # runners (libnss3, libatk, libxkbcommon, etc.).
+        run: uv run python -m playwright install --with-deps chromium
+
+      - name: Run scroll-height test
+        run: uv run pytest tests/playwright/test_scroll_height.py -m e2e -v
