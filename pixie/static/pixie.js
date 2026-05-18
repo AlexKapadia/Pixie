@@ -10,6 +10,25 @@
   var ACCENT_KEY = "pixie.accent";
   var DENSITY_KEY = "pixie.density";
 
+  // Theme registry. `variant` tells the accent system which sub-palette
+  // (light/dark) to pick from ACCENTS for runtime accent overrides.
+  // To add a theme: append an entry here AND a [data-theme="<id>"] block
+  // in pixie.css AND the same id to THEME_CHOICES in pixie/routes/settings.py.
+  var THEMES = {
+    light:              { label: "Light",             variant: "light" },
+    dark:               { label: "Dark",              variant: "dark"  },
+    bloomberg:          { label: "Bloomberg",         variant: "dark"  },
+    "solarized-light":  { label: "Solarized Light",   variant: "light" },
+    "solarized-dark":   { label: "Solarized Dark",    variant: "dark"  },
+    dracula:            { label: "Dracula",           variant: "dark"  },
+    nord:               { label: "Nord",              variant: "dark"  },
+    monokai:            { label: "Monokai",           variant: "dark"  },
+    "github-dark":      { label: "GitHub Dark",       variant: "dark"  },
+    "gruvbox-dark":     { label: "Gruvbox Dark",      variant: "dark"  },
+    sepia:              { label: "Sepia",             variant: "light" },
+    "high-contrast":    { label: "High Contrast",     variant: "light" },
+    "catppuccin-latte": { label: "Catppuccin Latte",  variant: "light" }
+  };
   // Mirrors the design's ACCENTS map (DESIGN_SPEC.md s4).
   var ACCENTS = {
     indigo: {
@@ -32,13 +51,23 @@
 
   var Pixie = window.Pixie || {};
   window.Pixie = Pixie;
+  Pixie.themes = THEMES;
 
   function currentTheme() {
     return document.documentElement.getAttribute("data-theme") || "light";
   }
+  function themeVariant(theme) {
+    var t = THEMES[theme];
+    return (t && t.variant) || "light";
+  }
+  // Treat any registered theme with variant "dark" as dark for code that
+  // historically checked `data-theme === "dark"` (CodeMirror, Plotly etc).
+  Pixie.isDark = function () {
+    return themeVariant(currentTheme()) === "dark";
+  };
 
   Pixie.setTheme = function (theme) {
-    if (theme !== "light" && theme !== "dark") return;
+    if (!THEMES[theme]) return;
     document.documentElement.setAttribute("data-theme", theme);
     try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
     // Re-apply accent so the per-theme variant takes effect.
@@ -53,16 +82,23 @@
     Pixie._accent = name;
     try { localStorage.setItem(ACCENT_KEY, name); } catch (e) {}
     var theme = currentTheme();
-    var p = palette[theme] || palette.light;
+    var p = palette[themeVariant(theme)] || palette.light;
     var style = document.getElementById("pixie-accent");
     if (!style) {
       style = document.createElement("style");
       style.id = "pixie-accent";
       document.head.appendChild(style);
     }
-    // Override accent variables at :root so cascade still works.
+    // Build a selector covering every registered theme so the runtime
+    // accent override beats the per-theme baseline in pixie.css.
+    var selectors = [":root"];
+    for (var id in THEMES) {
+      if (THEMES.hasOwnProperty(id)) {
+        selectors.push('[data-theme="' + id + '"]');
+      }
+    }
     style.textContent =
-      ":root, [data-theme=\"light\"], [data-theme=\"dark\"] {" +
+      selectors.join(", ") + " {" +
       "  --accent: " + p.accent + ";" +
       "  --accent-2: " + p.accent2 + ";" +
       "}";
@@ -78,7 +114,7 @@
   };
 
   Pixie.toggleTheme = function () {
-    Pixie.setTheme(currentTheme() === "dark" ? "light" : "dark");
+    Pixie.setTheme(Pixie.isDark() ? "light" : "dark");
   };
 
   // --- swap-hook registrar -------------------------------------------------
@@ -133,8 +169,12 @@
     var payload;
     try { payload = JSON.parse(el.textContent || el.innerText || "{}"); }
     catch (e) { return; }
-    if (payload.theme === "light" || payload.theme === "dark") {
-      Pixie.setTheme(payload.theme);
+    var t = payload.theme;
+    if (t === "auto") {
+      t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    if (t && THEMES[t]) {
+      Pixie.setTheme(t);
     }
     if (payload.accent && ACCENTS[payload.accent]) {
       Pixie.setAccent(payload.accent);
@@ -167,7 +207,7 @@
     try { savedAccent = localStorage.getItem(ACCENT_KEY); } catch (e) {}
     try { savedDensity = localStorage.getItem(DENSITY_KEY); } catch (e) {}
 
-    if (savedTheme === "light" || savedTheme === "dark") {
+    if (savedTheme && THEMES[savedTheme]) {
       document.documentElement.setAttribute("data-theme", savedTheme);
     }
     Pixie.setAccent(savedAccent && ACCENTS[savedAccent] ? savedAccent : "indigo");
@@ -329,7 +369,7 @@
   };
 
   Pixie.addBaseTiles = function (map) {
-    var dark = document.documentElement.getAttribute("data-theme") === "dark";
+    var dark = Pixie.isDark();
     var url = dark
       ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
@@ -661,7 +701,7 @@
         ts: "javascript", typescript: "javascript",
         html: "htmlmixed", xml: "xml"
       };
-      var dark = document.documentElement.getAttribute("data-theme") === "dark";
+      var dark = Pixie.isDark();
       CodeMirror.fromTextArea(ta, {
         mode: modeMap[lang] || "text/plain",
         theme: dark ? "material-darker" : "neo",
@@ -674,7 +714,7 @@
   };
 
   document.addEventListener("pixie:theme-changed", function () {
-    var dark = document.documentElement.getAttribute("data-theme") === "dark";
+    var dark = Pixie.isDark();
     document.querySelectorAll(".CodeMirror").forEach(function (cm) {
       if (cm.CodeMirror) cm.CodeMirror.setOption("theme", dark ? "material-darker" : "neo");
     });

@@ -81,7 +81,28 @@ GLOBAL_KEYS = (
 
 ACCENT_CHOICES = ("indigo", "slate", "forest", "ember")
 DENSITY_CHOICES = ("compact", "comfortable", "airy")
-THEME_CHOICES = ("light", "dark", "auto")
+
+# Theme registry. Keep in lockstep with the THEMES map in pixie.js and the
+# [data-theme="<id>"] blocks in pixie.css. `variant` is "light" or "dark"
+# and decides which sub-palette the per-theme accent override picks.
+# "auto" is a meta-choice that resolves to light/dark via matchMedia client-side.
+THEMES: dict[str, dict[str, str]] = {
+    "auto":              {"label": "Auto",             "variant": "light"},
+    "light":             {"label": "Light",            "variant": "light"},
+    "dark":              {"label": "Dark",             "variant": "dark"},
+    "bloomberg":         {"label": "Bloomberg",        "variant": "dark"},
+    "solarized-light":   {"label": "Solarized Light",  "variant": "light"},
+    "solarized-dark":    {"label": "Solarized Dark",   "variant": "dark"},
+    "dracula":           {"label": "Dracula",          "variant": "dark"},
+    "nord":              {"label": "Nord",             "variant": "dark"},
+    "monokai":           {"label": "Monokai",          "variant": "dark"},
+    "github-dark":       {"label": "GitHub Dark",      "variant": "dark"},
+    "gruvbox-dark":      {"label": "Gruvbox Dark",     "variant": "dark"},
+    "sepia":             {"label": "Sepia",            "variant": "light"},
+    "high-contrast":     {"label": "High Contrast",    "variant": "light"},
+    "catppuccin-latte":  {"label": "Catppuccin Latte", "variant": "light"},
+}
+THEME_CHOICES = tuple(THEMES.keys())
 
 
 async def load_global_settings(settings: Settings) -> dict[str, Any]:
@@ -220,6 +241,7 @@ async def global_settings_page(
         accent_choices=ACCENT_CHOICES,
         density_choices=DENSITY_CHOICES,
         theme_choices=THEME_CHOICES,
+        themes=THEMES,
         revalidate_status=getattr(request.app.state, "revalidate_status", None),
     )
     template = (
@@ -228,6 +250,44 @@ async def global_settings_page(
         else "settings.html"
     )
     return templates.TemplateResponse(request, template, ctx)
+
+
+_INSTANT_KEYS = {"theme", "accent", "density"}
+
+
+@router.post("/settings/preference", response_class=Response)
+async def save_preference(
+    settings: SettingsDep,
+    launcher: LauncherDep,
+    key: Annotated[str, Form()],
+    value: Annotated[str, Form()],
+) -> Response:
+    """Persist a single Appearance preference immediately.
+
+    The settings page's Theme / Accent / Density radios POST here from their
+    onchange handler so the chosen value sticks across htmx swaps — without
+    waiting for the Save button or losing the rest of the form state.
+    Returns 204 (no body) so htmx doesn't replace anything; the client has
+    already updated the DOM via Pixie.setTheme/Accent/Density.
+    """
+    if key not in _INSTANT_KEYS:
+        raise HTTPException(status_code=400, detail="unknown preference key")
+    if key == "theme" and value not in THEME_CHOICES:
+        raise HTTPException(status_code=400, detail="unknown theme")
+    if key == "accent" and value not in ACCENT_CHOICES:
+        raise HTTPException(status_code=400, detail="unknown accent")
+    if key == "density" and value not in DENSITY_CHOICES:
+        raise HTTPException(status_code=400, detail="unknown density")
+
+    await db.set_setting(settings.db_path, key, value)
+    # Mirror into in-memory Settings so subsequent SSR payloads match.
+    if key == "theme":
+        settings.theme = "dark" if THEMES.get(value, {}).get("variant") == "dark" else "light"
+    elif key == "accent":
+        settings.accent = value
+    elif key == "density":
+        settings.density = value  # type: ignore[assignment]
+    return Response(status_code=204)
 
 
 @router.post("/settings", response_class=HTMLResponse)
@@ -267,7 +327,12 @@ async def save_global_settings(
     launcher.settings.warm_keep_max = warm_keep_max
     launcher.settings.warm_keep_seconds = warm_keep_seconds
     settings.developer_mode = dev_flag
-    settings.theme = "dark" if theme == "dark" else "light"
+    # settings.theme is the SSR fallback for the <html data-theme> attribute;
+    # it must be a base palette name (light/dark) the CSS can render before JS
+    # hydrates. Themes whose variant is "dark" fall back to "dark"; the rest
+    # to "light". The full theme id is still persisted in pixie.db and applied
+    # by Pixie.setTheme as soon as the payload script parses.
+    settings.theme = "dark" if THEMES.get(theme, {}).get("variant") == "dark" else "light"
     settings.accent = accent
     settings.density = density  # type: ignore[assignment]
 
