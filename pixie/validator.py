@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import httpx
+from packaging.requirements import InvalidRequirement, Requirement
 from pydantic import BaseModel, ValidationError
 
 from pixie import db
@@ -65,7 +66,7 @@ from pixie.launcher import (
 logger = logging.getLogger("pixie.validator")
 
 REQUIRED_FILES = ("tool.json", "pyproject.toml", "main.py")
-REQUIRED_DEPS = ("fastapi", "uvicorn", "python-dotenv")
+REQUIRED_DEPS = ("fastapi", "uvicorn", "pydantic", "python-dotenv")
 SHUTDOWN_GRACE_S = 5.0
 SAMPLE_RUN_PADDING_S = 5.0
 STREAM_TIMEOUT_S = 10.0
@@ -346,15 +347,37 @@ def _check_output_value(spec: Any, value: Any) -> tuple[str, str | None]:
 # --- pyproject parsing -------------------------------------------------------
 
 
+def _canonical_dep_name(name: str) -> str:
+    """PEP 503 canonical normalisation: lowercase + collapse [-_.]+ to '-'."""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
 def _extract_dep_names(deps: list[str]) -> list[str]:
+    """Parse each dependency string via packaging.requirements.Requirement.
+
+    Falls back to a permissive substring split only when the spec is not
+    parseable as a PEP 508 requirement (e.g. local file paths). Returned
+    names are PEP 503 canonical (lowercase, '-' separator) so they can be
+    compared directly against REQUIRED_DEPS.
+    """
     names: list[str] = []
     for dep in deps:
-        token = dep.split(";", 1)[0].strip()
-        for separator in ("==", ">=", "<=", "~=", "!=", ">", "<", "[", " "):
+        spec = dep.strip()
+        if not spec:
+            continue
+        try:
+            requirement = Requirement(spec)
+            names.append(_canonical_dep_name(requirement.name))
+            continue
+        except InvalidRequirement:
+            pass
+        # Fallback: best-effort split for non-PEP-508 specs.
+        token = spec.split(";", 1)[0].strip()
+        for separator in ("==", ">=", "<=", "~=", "!=", ">", "<", "[", " ", "@"):
             if separator in token:
                 token = token.split(separator, 1)[0]
                 break
-        names.append(token.strip().lower())
+        names.append(_canonical_dep_name(token.strip()))
     return names
 
 
@@ -485,12 +508,21 @@ async def _check_pyproject(tool_path: Path) -> ValidationCheck:
     project = data.get("project", {})
     deps_raw = project.get("dependencies", []) or []
     dep_names = _extract_dep_names(deps_raw)
-    missing = [name for name in REQUIRED_DEPS if name not in dep_names]
+    declared_set = set(dep_names)
+    per_dep_status = [
+        f"  {name}: {'present' if name in declared_set else 'MISSING'}"
+        for name in REQUIRED_DEPS
+    ]
+    missing = [name for name in REQUIRED_DEPS if name not in declared_set]
     if missing:
         return ValidationCheck(
             name="pyproject_ok", status="fail",
             message=f"missing required dependencies: {', '.join(missing)}",
-            details=f"declared: {dep_names}",
+            details=(
+                "required canonical names (PEP 503):\n"
+                + "\n".join(per_dep_status)
+                + f"\ndeclared (canonicalised): {dep_names}"
+            ),
         )
     non_pypi = [dep for dep in deps_raw if _looks_like_non_pypi(dep)]
     if non_pypi:
@@ -556,6 +588,7 @@ async def _spawn_for_validation(
     python = _venv_python(tool_path)
     env = _build_child_env(tool_path)
     env["PIXIE_VALIDATE"] = "true"
+    spawn_time = asyncio.get_running_loop().time()
     process = await asyncio.create_subprocess_exec(
         str(python), schema.entrypoint, "--port", str(port),
         cwd=str(tool_path),
@@ -565,6 +598,10 @@ async def _spawn_for_validation(
         stderr=subprocess.PIPE,
         **_popen_kwargs(schema),
     )
+    # Stash spawn timestamp on the process object so _poll_healthz can
+    # detect the "clean exit during startup" pattern (signals a missing
+    # __main__ guard in main.py).
+    setattr(process, "_pixie_spawn_time", spawn_time)
     ring = StderrRing()
     pump = asyncio.create_task(_pump_stderr(process, ring))
     return process, ring, pump
@@ -580,10 +617,32 @@ async def _poll_healthz(
     url = f"http://127.0.0.1:{port}/healthz"
     while True:
         if process.returncode is not None:
-            return False, (
+            stderr_snapshot = ring.snapshot()
+            detail = (
                 f"process exited with code {process.returncode} during startup\n"
-                f"--- stderr ---\n{ring.snapshot()}"
+                f"--- stderr ---\n{stderr_snapshot}"
             )
+            spawn_time = getattr(process, "_pixie_spawn_time", None)
+            elapsed = (
+                asyncio.get_running_loop().time() - spawn_time
+                if spawn_time is not None else None
+            )
+            # "Clean exit during startup" pattern: exit 0, no stderr,
+            # under 2 s since spawn. Almost always a missing
+            # `if __name__ == "__main__": main()` block — Python parses
+            # main.py, defines main() but never calls it, then exits.
+            if (
+                process.returncode == 0
+                and not stderr_snapshot.strip()
+                and elapsed is not None
+                and elapsed < 2.0
+            ):
+                detail += (
+                    "\nprocess exited cleanly during startup — main.py likely "
+                    "missing 'if __name__ == \"__main__\"' block; see "
+                    "pixie/templates_scaffold/blank/main.py for the required runner"
+                )
+            return False, detail
         try:
             response = await client.get(url, timeout=1.0)
             if response.status_code == 200:

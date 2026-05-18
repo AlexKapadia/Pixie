@@ -417,7 +417,17 @@ def load_tolerance_yaml(path: Path) -> ToleranceConfig:
         data = yaml.safe_load(raw) or {}
     except yaml.YAMLError as exc:
         config = ToleranceConfig()
-        config.errors.append(f"could not parse YAML: {exc}")
+        # Surface line number + the parser's own diagnostic. PyYAML's
+        # str(exc) is multi-line and noisy; problem_mark.line is 0-based.
+        mark = getattr(exc, "problem_mark", None)
+        problem = getattr(exc, "problem", None)
+        if mark is not None and problem:
+            line_no = mark.line + 1  # convert to 1-based for humans
+            config.errors.append(
+                f"could not parse YAML at line {line_no}: {problem}"
+            )
+        else:
+            config.errors.append(f"could not parse YAML: {exc}")
         return config
 
     if not isinstance(data, dict):
@@ -431,9 +441,24 @@ def load_tolerance_yaml(path: Path) -> ToleranceConfig:
         return ToleranceConfig.model_validate(data)
     except ValidationError as exc:
         config = ToleranceConfig()
+        scalar_where_dict_seen = False
         for error in exc.errors():
             loc = ".".join(str(part) for part in error.get("loc", ()))
             config.errors.append(f"{loc or '<root>'}: {error.get('msg')}")
+            # Detect the classic 'key:{...}' (missing space) footgun:
+            # pydantic sees a string where it expected a dict.
+            err_type = error.get("type", "")
+            input_value = error.get("input")
+            if (
+                err_type in {"model_type", "dict_type"}
+                and isinstance(input_value, str)
+            ):
+                scalar_where_dict_seen = True
+        if scalar_where_dict_seen:
+            config.errors.append(
+                "YAML hint: 'key:{...}' without a space after the colon is a "
+                "scalar, not a dict. Either write 'key: {...}' or use block style."
+            )
         return config
 
 
