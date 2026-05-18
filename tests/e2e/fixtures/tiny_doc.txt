@@ -1,0 +1,1 @@
+Pixie is a local-first dashboard for running tools. It binds to loopback only. It uses FastAPI and htmx. Every tool runs as its own subprocess with its own venv. The validator runs eleven checks before declaring a tool valid.

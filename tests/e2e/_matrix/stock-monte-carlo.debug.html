@@ -1,0 +1,40 @@
+<div class="pixie-error pixie-error--error" role="alert" data-error-kind="spawn" data-tool-id="stock-monte-carlo">
+  <header class="pixie-error__head">
+    <span class="pixie-error__icon" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 5v4M8 11h.01"></path></svg></span>
+    <div class="pixie-error__head-text">
+      <div class="pixie-error__title-row">
+        <span class="t-h6">Tool failed to start.</span>
+        <span class="badge badge--muted mono">Stock Monte Carlo</span>
+      </div>
+      <p class="t-body pixie-error__summary">The tool process did not survive healthz polling. Pixie spawned stock-monte-carlo but its /schema endpoint never came up.</p>
+    </div>
+  </header>
+  
+    <details class="pixie-error__details">
+      <summary class="t-meta">Show details</summary>
+      <pre class="pixie-error__pre mono">tool 'stock-monte-carlo' returned 422: {"detail":[{"type":"float_type","loc":["body","inputs","spot_price"],"msg":"Input should be a valid number","input":null},{"type":"float_type","loc":["body","inputs","drift"],"msg":"Input should be a valid number","input":null},{"type":"float_type","loc":["body","inputs","volatility"],"msg":"Input should be a valid number","input":null},{"type":"int_type","loc":["body","inputs","days"],"msg":"Input should be a valid integer","input":null},{"type":"int_type","loc":["body","inputs","paths"],"msg":
+--- stderr ---
+</pre>
+    </details>
+  
+  <div class="pixie-error__actions">
+    <div class="pixie-error__actions-row">
+      <button type="button" class="btn btn--sm btn--primary" hx-post="/api/tools/stock-monte-carlo/validate" hx-target="#pixie-main-content" hx-swap="innerHTML">
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8a6 6 0 0 1 10.5-4M14 8a6 6 0 0 1-10.5 4"></path><path d="M12.5 1.5V4h-2.5M3.5 14.5V12H6"></path></svg> Re-validate
+    </button>
+      
+      
+        
+          <button type="button" class="btn btn--sm" data-pixie-copy="In Claude Code, run: debug the stock-monte-carlo tool." data-pixie-copy-toast="Prompt copied. Paste into Claude Code." data-bound="1">
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 13 8-8M10 3l1 1M12 5l1 1M13 9l1 1M3 6l1 1"></path></svg> Hand off to debug-tool
+    </button>
+        
+          <a class="btn btn--sm" href="/api/tools/stock-monte-carlo/reveal">
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5a1 1 0 0 1 1-1H6l1.5 1.5h6a1 1 0 0 1 1 1V12a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V4.5Z"></path></svg> Open tool folder
+    </a>
+        
+      
+    </div>
+    <div class="t-meta pixie-error__hint">Validator output is the fastest path to a fix. The Claude Code hand-off copies a ready prompt.</div>
+  </div>
+</div>

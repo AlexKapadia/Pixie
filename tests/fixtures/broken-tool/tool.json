@@ -1,0 +1,13 @@
+{
+  "id": "broken-tool",
+  "name": "Broken Tool",
+  "description": "Deliberately broken fixture: duplicate input key.",
+  "inputs": [
+    {"key": "foo", "type": "text", "label": "First foo"},
+    {"key": "foo", "type": "text", "label": "Second foo (duplicate)"},
+    {"key": "depends", "type": "text", "label": "Depends on missing", "show_if": {"key": "nonexistent", "equals": true}}
+  ],
+  "outputs": [
+    {"key": "result", "type": "text", "label": "Result"}
+  ]
+}
