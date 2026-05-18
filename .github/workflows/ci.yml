@@ -1,0 +1,201 @@
+name: CI
+
+# Backend validation jobs covering the master-prompt section 9 audit.
+# Kept separate from docs.yml (Astro Pages build) so docs deploys are
+# never gated on a Python regression.
+
+on:
+  push:
+    branches: [main, master-prompt-fixes]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  UV_SYSTEM_PYTHON: "1"
+
+jobs:
+  # 9.1 — Every pixie submodule must import without side-effect crashes.
+  # Cheap, fast smoke that catches the "missing import" class of regression
+  # before any of the heavier jobs spend time on the same root cause.
+  module-imports:
+    name: validator module-import smoke (9.1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install project
+        run: uv sync --frozen --extra accuracy || uv sync --extra accuracy
+
+      - name: Import every pixie module
+        run: |
+          uv run python -c "
+          import pkgutil, importlib, pixie
+          for m in pkgutil.walk_packages(pixie.__path__, prefix='pixie.'):
+              importlib.import_module(m.name)
+          print('all pixie modules imported.')
+          "
+
+  # 9.2 — Scaffold each template from _index.json via the CLI, then validate
+  # the result. Asserts no check returns status=fail. (The validator uses
+  # pass / warn / fail — there is no "skip" status; a fresh scaffold should
+  # at worst warn, never fail.)
+  scaffold-roundtrip:
+    name: scaffold round-trip per template (9.2)
+    runs-on: ubuntu-latest
+    needs: module-imports
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install project
+        run: uv sync --frozen --extra accuracy || uv sync --extra accuracy
+
+      - name: Scaffold + validate every template
+        env:
+          # Isolated tools dir so we never touch the repo's tools/ tree.
+          PIXIE_TOOLS_DIR: ${{ runner.temp }}/pixie-tools
+        run: |
+          mkdir -p "$PIXIE_TOOLS_DIR"
+          uv run python - <<'PY'
+          import json, os, subprocess, sys
+          from pathlib import Path
+
+          repo = Path(".").resolve()
+          index = json.loads(
+              (repo / "pixie" / "templates_scaffold" / "_index.json").read_text()
+          )
+          templates = [t["name"] for t in index["templates"]]
+          failures: list[str] = []
+
+          for template in templates:
+              tool_id = f"t-{template}"
+              print(f"::group::scaffold {tool_id} (template={template})")
+              proc = subprocess.run(
+                  [
+                      sys.executable, "-m", "pixie", "scaffold-tool", tool_id,
+                      "--template", template,
+                      "--name", tool_id,
+                      "--force",
+                      # --no-sync keeps wall-time tractable; check #5
+                      # (venv_exists) will warn but cannot fail the run.
+                      "--no-sync",
+                      "--no-validate",
+                  ],
+                  check=False, capture_output=True, text=True,
+              )
+              print(proc.stdout)
+              print(proc.stderr, file=sys.stderr)
+              if proc.returncode != 0:
+                  failures.append(f"{template}: scaffold exited {proc.returncode}")
+                  print("::endgroup::")
+                  continue
+
+              vproc = subprocess.run(
+                  [sys.executable, "-m", "pixie", "validate", tool_id,
+                   "--json", "--no-save"],
+                  check=False, capture_output=True, text=True,
+              )
+              print(vproc.stderr, file=sys.stderr)
+              # validate exits non-zero on overall fail; parse the JSON
+              # to surface exactly which check(s) failed.
+              try:
+                  report = json.loads(vproc.stdout)
+              except json.JSONDecodeError:
+                  failures.append(
+                      f"{template}: validate emitted non-JSON output\n"
+                      f"  stdout head: {vproc.stdout[:300]!r}"
+                  )
+                  print("::endgroup::")
+                  continue
+
+              bad = [
+                  c for c in report.get("checks", [])
+                  if c.get("status") == "fail"
+              ]
+              if bad:
+                  for c in bad:
+                      failures.append(
+                          f"{template}: check '{c.get('name')}' FAILED — "
+                          f"{c.get('message') or c.get('detail') or ''}"
+                      )
+              else:
+                  statuses = {c.get("status", "?") for c in report.get("checks", [])}
+                  print(f"{tool_id}: ok (statuses seen: {sorted(statuses)})")
+              print("::endgroup::")
+
+          if failures:
+              print("\nSCAFFOLD ROUND-TRIP FAILURES:", file=sys.stderr)
+              for f in failures:
+                  print(f"  - {f}", file=sys.stderr)
+              sys.exit(1)
+          print("\nAll templates scaffolded and validated cleanly.")
+          PY
+
+  # 9.3 — Paper-skill round-trip. Stubbed: requires a real arXiv PDF fixture
+  # that is not yet in the tree. See master prompt section 9.3.
+  # TODO: create tests/fixtures/papers/sample.pdf (small public-domain PDF
+  #       with an equation set), then replace this step with a job that
+  #       runs the add-tool-from-paper skill end-to-end and validates the
+  #       resulting tool, mirroring 9.2's structure.
+  paper-skill-roundtrip:
+    name: paper-skill round-trip (9.3, stubbed)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip
+        run: |
+          echo "SKIPPED: paper-skill round-trip requires tests/fixtures/papers/sample.pdf — see master prompt section 9.3"
+          exit 0
+
+  # 9.4 — Every path-shaped string in .claude/skills/**/SKILL.md must
+  # resolve on disk. Catches stale references introduced by tool renames
+  # or deletions before they ship.
+  skill-paths:
+    name: dead-skill-path check (9.4)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Run skill-path audit
+        run: python tools/ci/check_skill_paths.py
+
+  # 9.5 — Every <form hx-post="/settings/..."> must opt out of HTMX
+  # json-enc AND declare urlencoded encoding, or FastAPI's Form(...)
+  # parser will silently see an empty body.
+  form-json-enc:
+    name: settings-form json-enc audit (9.5)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Run form json-enc audit
+        run: python tools/ci/check_form_json_enc.py
