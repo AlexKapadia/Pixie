@@ -89,13 +89,27 @@ async def run_tool(
         if artefacts is not None and run_ctx is not None:
             declared = {o.key for o in (tool.schema.outputs or [])}
             try:
-                await artefacts_mod.register_run_artefacts(
+                registered = await artefacts_mod.register_run_artefacts(
                     artefacts, tool.tool_id, run_id,
                     run_dir=run_ctx.artefacts_dir,
                     declared_output_keys=declared,
                 )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("post-run artefact registration failed: %s", exc)
+                registered = []
+            # 4.2 — when the tool produced no files, persist inline outputs
+            # JSON to the Library so the run is still visible there.
+            if not registered:
+                try:
+                    await artefacts_mod.materialise_outputs_json(
+                        artefacts, tool.tool_id, run_id,
+                        body.get("outputs") if isinstance(body, dict) else body,
+                        run_dir=run_ctx.artefacts_dir,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(
+                        "post-run inline outputs persistence failed: %s", exc
+                    )
         return body
     except httpx.HTTPStatusError as exc:
         stderr_tail = _stderr_for(launcher, tool.tool_id)
@@ -189,13 +203,27 @@ async def stream_tool(
         if artefacts is not None and run_ctx is not None:
             try:
                 declared = {o.key for o in (tool.schema.outputs or [])}
-                await artefacts_mod.register_run_artefacts(
+                registered = await artefacts_mod.register_run_artefacts(
                     artefacts, tool.tool_id, run_id,
                     run_dir=run_ctx.artefacts_dir,
                     declared_output_keys=declared,
                 )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("final stream artefact scan failed: %s", exc)
+                registered = []
+            # 4.2 — stream runs that emitted no files: persist a minimal
+            # outputs.json marker so the run remains visible in Library.
+            if not registered:
+                try:
+                    await artefacts_mod.materialise_outputs_json(
+                        artefacts, tool.tool_id, run_id,
+                        {"_stream_complete": True},
+                        run_dir=run_ctx.artefacts_dir,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(
+                        "stream inline outputs persistence failed: %s", exc
+                    )
     except Exception as exc:
         await db.record_run_error(settings.db_path, run_id, str(exc))
         raise

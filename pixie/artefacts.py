@@ -390,6 +390,81 @@ async def register_run_artefacts(
     return new_ids
 
 
+async def materialise_outputs_json(
+    registry: ArtefactRegistry,
+    tool_id: str,
+    run_id: str,
+    outputs: Any,
+    *,
+    run_dir: Path | None = None,
+) -> int | None:
+    """Persist an inline-JSON outputs payload to the Library.
+
+    For tools whose outputs are pure inline values (no files produced),
+    ``register_run_artefacts`` finds nothing on disk and returns []. To
+    keep these runs visible in the Library, we materialise the outputs
+    dict as ``outputs.json`` under the run dir and register a single
+    artefact row tagged ``_pixie_run_outputs``.
+
+    Idempotent: if a row already exists for this run with the same
+    sha256, no new row is created and the existing id is returned.
+    """
+
+    if outputs is None:
+        return None
+    settings = registry.settings
+    target_dir = run_dir or registry.get_run_dir(tool_id, run_id)
+    target_dir.mkdir(parents=True, exist_ok=True)
+    outputs_path = target_dir / "outputs.json"
+
+    try:
+        serialised = json.dumps(outputs, sort_keys=True, ensure_ascii=False, default=str)
+    except (TypeError, ValueError) as exc:
+        logger.warning(
+            "materialise_outputs_json: could not serialise outputs for "
+            "run=%s tool=%s: %s", run_id, tool_id, exc,
+        )
+        return None
+    payload = serialised.encode("utf-8")
+    sha256 = hashlib.sha256(payload).hexdigest()
+
+    # Idempotency check: skip if a row already exists with the same hash.
+    existing = await db.list_artefacts(
+        settings.db_path, run_id=run_id, include_deleted=True, limit=10_000,
+    )
+    for row in existing:
+        if row.get("sha256") == sha256:
+            return int(row.get("id") or 0) or None
+
+    # Write atomically.
+    tmp_path = outputs_path.with_suffix(".json.partial")
+    try:
+        await run_in_threadpool(tmp_path.write_bytes, payload)
+        await run_in_threadpool(os.replace, tmp_path, outputs_path)
+    except OSError as exc:
+        logger.warning(
+            "materialise_outputs_json: write failed run=%s tool=%s: %s",
+            run_id, tool_id, exc,
+        )
+        try:
+            if tmp_path.exists():
+                tmp_path.unlink()
+        except OSError:
+            pass
+        return None
+
+    rel_path = registry.rel(outputs_path)
+    size_bytes = len(payload)
+    artefact_id = await db.register_artefact(
+        settings.db_path,
+        run_id=run_id, tool_id=tool_id, output_key="_pixie_run_outputs",
+        rel_path=rel_path, filename="outputs.json",
+        mime="application/json", size_bytes=size_bytes, sha256=sha256,
+        tags=["_pixie_run_outputs"],
+    )
+    return artefact_id
+
+
 def rehydrate_outputs(
     outputs_json: dict[str, Any] | None,
     artefacts_by_key: dict[str, dict[str, Any]],
@@ -484,12 +559,17 @@ async def restore(settings: Settings, artefact_id: int) -> None:
 
 
 def _sync_restore(db_path: Path, artefact_id: int) -> None:
-    import sqlite3
-    with sqlite3.connect(db_path) as conn:
+    # ``db.connect`` enables PRAGMA foreign_keys = ON so any cascading
+    # constraints stay enforced even when this short helper opens its
+    # own connection outside the main context manager.
+    conn = db.connect(db_path)
+    try:
         conn.execute(
             "UPDATE artefacts SET deleted_at = NULL WHERE id = ?",
             (artefact_id,),
         )
+    finally:
+        conn.close()
 
 
 async def purge_expired(
@@ -540,9 +620,11 @@ async def hard_delete(registry: ArtefactRegistry, artefact_id: int) -> bool:
 
 
 def _sync_hard_delete(db_path: Path, artefact_id: int) -> None:
-    import sqlite3
-    with sqlite3.connect(db_path) as conn:
+    conn = db.connect(db_path)
+    try:
         conn.execute("DELETE FROM artefacts WHERE id = ?", (artefact_id,))
+    finally:
+        conn.close()
 
 
 # --- thumbnails --------------------------------------------------------------
@@ -690,6 +772,23 @@ async def sweeper_once(registry: ArtefactRegistry) -> dict[str, int]:
     except Exception as exc:  # noqa: BLE001
         logger.warning("sweep partial cleanup failed: %s", exc)
 
+    # 4. Orphan artefact rows (defence-in-depth — the cascading FK should
+    #    keep this at zero, but legacy DBs and code paths that bypassed
+    #    foreign_keys = ON can still leave dangling rows behind).
+    try:
+        counts["orphans_purged"] = await db.purge_orphan_artefacts(
+            settings.db_path,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("sweep orphan purge failed: %s", exc)
+
+    # 5. Refresh query-planner stats so the next batch of queries plans
+    #    against the current row counts. Cheap; safe to run every cycle.
+    try:
+        await db.analyze(settings.db_path)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("sweep ANALYZE failed: %s", exc)
+
     return counts
 
 
@@ -697,10 +796,12 @@ _SWEEPER_LOCK = asyncio.Lock()
 
 
 def _distinct_artefact_tools(db_path: Path) -> list[str]:
-    import sqlite3
-    with sqlite3.connect(db_path) as conn:
+    conn = db.connect(db_path)
+    try:
         rows = conn.execute("SELECT DISTINCT tool_id FROM artefacts").fetchall()
         return [r[0] for r in rows]
+    finally:
+        conn.close()
 
 
 def _purge_stale_partials(root: Path, *, age_seconds: float = 3600.0) -> int:
@@ -746,11 +847,12 @@ def is_secret_filename(name: str) -> bool:
 def disk_usage_by_tool(settings: Settings) -> list[dict[str, Any]]:
     """Synchronous summary used by the settings page."""
 
-    import sqlite3
-    with sqlite3.connect(settings.db_path) as conn:
-        conn.row_factory = sqlite3.Row
+    conn = db.connect(settings.db_path)
+    try:
         rows = conn.execute(
             "SELECT tool_id, COUNT(*) AS count, SUM(size_bytes) AS bytes "
             "FROM artefacts WHERE deleted_at IS NULL GROUP BY tool_id"
         ).fetchall()
+    finally:
+        conn.close()
     return [dict(row) for row in rows]

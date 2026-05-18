@@ -29,14 +29,18 @@ def build_app() -> FastAPI:
 
     @app.post("/run")
     async def run(payload: RunRequest) -> dict[str, Any]:
-        if payload.inputs is not None:
-            inputs = payload.inputs
-        else:
+        # The Inputs model is built dynamically from tool.json so a null
+        # sent by the dashboard for a key with a schema default resolves
+        # to the default. Legacy "flat" payloads (no wrapping inputs)
+        # still work via the extra="allow" fall-back.
+        raw = payload.inputs
+        if raw is None:
             flat = payload.model_dump(exclude_none=True)
             flat.pop("run_id", None)
             flat.pop("inputs", None)
-            inputs = Inputs.model_validate(flat) if flat else Inputs()
-        return compute(inputs).model_dump()
+            raw = flat
+        typed_inputs = Inputs.model_validate(raw or {})
+        return compute(typed_inputs).model_dump()
 
     @app.post("/cancel")
     async def cancel(run_id: str) -> Response:

@@ -7,4 +7,5 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn>=0.30",
     "python-dotenv>=1.0",
+    "pydantic>=2.0",
 ]
