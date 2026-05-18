@@ -5,10 +5,11 @@ sidebar:
   order: 1
 ---
 
-Pixie is a single local web app that lists every Python tool in your `tools/`
-folder and renders a UI for each one from a `tool.json` schema. Tools run as
-isolated subprocesses with their own `uv` virtual environments. They spawn on
-click, stay warm for a few minutes, then shut down.
+Pixie turns any Python script/notebook/repo into a local UI tool with no cloud
+and no frontend work. It lists every Python tool in your `tools/` folder and
+renders a UI for each one from a `tool.json` schema. Tools run as isolated
+subprocesses with their own `uv` virtual environments. They spawn on click,
+stay warm for a few minutes, then shut down.
 
 You add tools by talking to Claude Code. You don't install anything through
 the UI.

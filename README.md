@@ -2,7 +2,7 @@
 
 <img src="./Pixie%20Logo.png" alt="Pixie" width="220" />
 
-### A local dashboard for every Python tool you've ever written.
+### Pixie turns any Python script/notebook/repo into a local UI tool with no cloud and no frontend work.
 
 [Docs](https://alexkapadia.github.io/Pixie/) · [Install](https://alexkapadia.github.io/Pixie/start/install/) · [Cookbook](https://alexkapadia.github.io/Pixie/cookbook/) · [Skills](https://alexkapadia.github.io/Pixie/skills/overview/)
 
@@ -20,7 +20,8 @@ https://github.com/AlexKapadia/Pixie/raw/main/Pixie.mp4
 
 ## What it is
 
-Pixie is one local web app. Point it at a `tools/` folder and it scans, validates, and serves every tool in there with a real UI: forms, charts, maps, tables, audio, video, the lot. Each tool runs in its own `uv` virtualenv as a subprocess that spins up on click and shuts down when idle.
+Pixie turns any Python script/notebook/repo into a local UI tool with no cloud and no frontend work.
+Point it at a `tools/` folder and it scans, validates, and serves every tool in there with a real UI: forms, charts, maps, tables, audio, video, the lot. Each tool runs in its own `uv` virtualenv as a subprocess that spins up on click and shuts down when idle.
 
 You don't add tools through the dashboard. You add them by talking to Claude Code, and you bring whatever you've already got:
 

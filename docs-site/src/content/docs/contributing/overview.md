@@ -71,6 +71,8 @@ The big ones:
 
 ## Read next
 
+- [OSS marketing playbook](/Pixie/contributing/oss-marketing/) — repeatable
+  channels, content cadence, trust signals, and growth metrics.
 - [Dev environment](/Pixie/contributing/dev-setup/) — get a working
   development setup in 5 minutes.
 - [Code style](/Pixie/contributing/style/) — the conventions.

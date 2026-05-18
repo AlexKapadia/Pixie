@@ -10,7 +10,7 @@ export default defineConfig({
     starlight({
       title: "Pixie",
       description:
-        "A local-first dashboard for your personal tools and models. Add tools by talking to Claude Code.",
+        "Pixie turns any Python script/notebook/repo into a local UI tool with no cloud and no frontend work.",
       logo: {
         src: "./src/assets/pixie-logo.png",
         alt: "Pixie logo",
@@ -100,6 +100,7 @@ export default defineConfig({
           label: "Contributing",
           items: [
             { label: "How to contribute", slug: "contributing/overview" },
+            { label: "OSS marketing playbook", slug: "contributing/oss-marketing" },
             { label: "Dev environment", slug: "contributing/dev-setup" },
             { label: "Code style", slug: "contributing/style" },
             { label: "Adding a new input/output type", slug: "contributing/new-type" },
